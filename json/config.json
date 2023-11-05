@@ -1,0 +1,17 @@
+{
+    "token_path": "key/manga_checker_box_token",
+    "sing_up_passwd_path": "key/manga_checker_box_passwd",
+    "database_path": "db/manga_tracker.db",
+    "logs_path": "logs/logs.txt",
+
+    "update_tracking_time_to_wait": 3600,
+    "request_waiting_error_time": 4,
+    "time_to_wait_between_search": 1,
+
+    "headers": {
+        "Accept-Language": "en-GB,en;q=0.5",
+        "User-agent": "Mozillas/5.0 (Windows NT 10.0; Win64; x64; rv:84.0) Gecko/20100101 Firefox/84.0",
+        "Referer": "https://google.com",
+        "DNT": "1"
+    }
+}

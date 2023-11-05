@@ -1,3 +1,30 @@
+# Carpetas
+__pycache__/
+__pycache__/*
+.vscode/
+.vscode/*
+.webs/
+.webs/*
+key/*
+lib/__pycache__/
+lib/__pycache__/*
+selenium_help/
+selenium_help/*
+test_files/
+test_files/*
+
+# Archivos
+db/manga_tracker.db
+db/manga_tracker - copia.db
+db/test_db.py
+json/manga_data.json
+json/webs.json
+logs/logs.txt
+test_bot.py
+test_db.py
+test_mwu.py
+test_py.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

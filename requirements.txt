@@ -1,0 +1,5 @@
+sqlite3
+requests-html
+beautifulsoup4
+python-telegram-bot
+python-telegram-bot[job-queue]

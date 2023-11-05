@@ -108,7 +108,7 @@ async def recieve_nick(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     logger.info(f"/SING_UP - User ID({user_id}) send the nickname: {context.user_data['nickname']}")
     
     # Creamos las posibles respuestas a la pregunta
-    logger.info(f"Asking to User ID({user_id}) for nickname confirmation")
+    logger.info(f"/SING_UP - Asking to User ID({user_id}) for nickname confirmation")
     reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
     await update.message.reply_text(
         f"The nickname '{context.user_data['nickname']}' is right?", reply_markup=reply_markup

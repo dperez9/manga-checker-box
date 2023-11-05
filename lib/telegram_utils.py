@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 from logging.handlers import TimedRotatingFileHandler
 import lib.database_utils as dbu
 import lib.manga_web_utils as mwu
@@ -16,25 +17,23 @@ from telegram.ext import (
 
 logs_path = ju.get_config_var("logs_path")
 
+# Creamos un handle para que el logger cree un archivo para cada dia
+suffix = '%Y-%m-%d.log'
+change_file_handler = TimedRotatingFileHandler(logs_path, when="midnight", backupCount=30) # BackupCount: Numero de archivos maximos de logs a conservar
+change_file_handler.suffix = suffix 
+
 # Configura el formato del log
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO,
     handlers=[
-        logging.FileHandler(logs_path),
+        change_file_handler,
         logging.StreamHandler()
     ]
 )
 
-
-
 # Crea un nuevo logger con el mismo formato
 logger = logging.getLogger(__name__)
-
-# Creamos un handle para que el logger cree un archivo para cada dia
-handler = TimedRotatingFileHandler(logs_path, when="midnight", backupCount=30)
-handler.suffix = "%Y%m%d.txt"
-logger.addHandler(handler)
 
 # Private vars
 __manga_checker_box_passwd = ju.get_sign_up_passwd()

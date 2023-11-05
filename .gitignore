@@ -4,6 +4,7 @@
 .webs/
 .webs/*
 lib/__pycache__/
+logs/*
 selenium_help/
 selenium_help/*
 test_files/

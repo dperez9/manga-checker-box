@@ -13,17 +13,6 @@ from telegram.ext import (
 
 TOKEN = ju.get_api_token()
 update_tracking_time_to_wait = ju.get_config_var("update_tracking_time_to_wait") # Tiempo en segundos
-logs_path = ju.get_config_var("logs_path")
-
-# Configura el formato del log
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO,
-    handlers=[
-        logging.FileHandler(logs_path),
-        logging.StreamHandler()
-    ]
-)
 
 # SIGN_UP HANDLER
 sign_up_handler = ConversationHandler(

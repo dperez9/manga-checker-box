@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 
 # Private vars
 __manga_checker_box_passwd = ju.get_sign_up_passwd()
+__adming_id = ju.get_admin_id()
 __time_to_wait_between_search = ju.get_config_var("time_to_wait_between_search") # Segundos
 __yes = "Yes"
 __no = "No"
@@ -49,6 +50,34 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/tracking - Add a new series to your tracking"
     
     await update.message.reply_text(msg)
+
+async def notice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+
+    user_id = update.message.from_user.id
+
+    # Si el escribe el comando no es admin finalizamos salimos del commando
+    if user_id != __adming_id:
+        return None
+    logger.info(f"/NOTICE - Admin user wants to notice a message")
+
+    msg = "Write a message to send to all Manga Checker Box users"
+    await update.message.reply_text(msg)
+
+    # Recibimos el mensaje
+    user_input = update.message.text
+    logger.info(f"/NOTICE - Admin sent the message:\n{user_input}")
+    logger.info(f"/NOTICE - Asking for confirmation")
+
+    reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
+    await update.message.reply_text(
+        f"Are you sure you want to send the message?", reply_markup=reply_markup
+    )
+
+    user_input = update.message.text
+    logger.info(f"/NOTICE - Admin input was: {user_input}")
+    logger.info(f"/NOTICE - Sending the message")
+    await context.bot.send_message(chat_id=user_id, text=user_input)
+
 
 # JOB QUEAU ==============================================================================
 # TRACKING_ALL ---------------------------------------------------------------------------
@@ -312,7 +341,6 @@ async def tracking_all(context: ContextTypes.DEFAULT_TYPE, notify: bool):
 
     table = dbu.select_all_manga_table()
     total_manga = len(table)
-    no_updates_counter = 0
 
     # Recorrer los registros y obtener los valores
     for row in table:
@@ -321,18 +349,14 @@ async def tracking_all(context: ContextTypes.DEFAULT_TYPE, notify: bool):
         last_chapter = row[2]
         web_name = row[3]
         
-
-        check = await tracking(context, web_name, url, name, last_chapter, notify)
-        if check == False:
-            no_updates_counter = no_updates_counter + 1
-
+        await tracking(context, web_name, url, name, last_chapter, notify)
         await asyncio.sleep(__time_to_wait_between_search)
-    if no_updates_counter == total_manga:
-        logger.info(f"/TRACKING_ALL - No manga updates so far")
+    
+    logger.info(f"/TRACKING_ALL - Tracked {total_manga} series")
 
 async def tracking(context: ContextTypes.DEFAULT_TYPE, web_name: str , url: str, name: str, last_chapter: str, notify: bool):
     # Si ocurre algun error mostrar el mensaje y pasamos al siguiente
-    logger.info(f"/TRACKING_ALL - Tracking: {name} - {web_name} - {url}")
+    logger.info(f"/TRACKING_ALL - Tracking: {name} - {web_name}")
 
     try:
         new_chapters = mwu.check_manga(web_name, url, last_chapter)

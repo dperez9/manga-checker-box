@@ -13,6 +13,7 @@ test_files/*
 # Archivos
 db/manga_tracker.db
 db/manga_tracker - copia.db
+key/admin_telegram_id
 key/manga_checker_box_passwd
 key/manga_checker_box_token
 db/test_db.py

@@ -50,3 +50,12 @@ def get_sign_up_passwd():
         output = file.readline()
 
     return output 
+
+def get_admin_id():
+    key_path = get_config_var("admin_id")
+    output = ""
+    with open(key_path, 'r') as file:
+    # Lee la línea que desees, por ejemplo, la primera línea
+        output = file.readline()
+
+    return output 

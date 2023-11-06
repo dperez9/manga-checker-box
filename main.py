@@ -41,9 +41,11 @@ if __name__ == '__main__':
 
     # Commands
     help_handler = CommandHandler('help', tu.help)
+    notice_handler = CommandHandler('notice', tu.notice)
 
     # CommandHandlers
     application.add_handler(help_handler)
+    application.add_handler(notice_handler)
     application.add_handler(sign_up_handler)
     application.add_handler(tracking_handler)
 

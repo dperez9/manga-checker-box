@@ -15,46 +15,34 @@ from telegram.ext import (
     filters,
 )
 
-
-# Creamos un logger para toda la informacion relacionada con el bot
-bot_logs_path = ju.get_config_var("logs_path") + "bot/today.log"
-
-# Creamos un handle para que el logger cree un archivo para cada dia
+logger_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 suffix = '%Y-%m-%d.log'
-bot_change_file_handler = TimedRotatingFileHandler(bot_logs_path, when="midnight", backupCount=30) # BackupCount: Numero de archivos maximos de logs a conservar
-bot_change_file_handler.suffix = suffix 
 
-# Configura el formato del log
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO,
-    handlers=[
-        bot_change_file_handler,
-        logging.StreamHandler()
-    ]
-)
+# Configuración para el logger del bot
+bot_logs_path = ju.get_config_var("logs_path") + "bot/today.log" 
+bot_change_file_handler = TimedRotatingFileHandler(bot_logs_path, when="midnight", backupCount=30) # Nos permitara ir actualizando el fichero log dia tras dia
+bot_change_file_handler.suffix = suffix # Establecemos el nombre que tendra el fichero
 
-# Crea un nuevo logger con el mismo formato
-bot_logger = logging.getLogger(__name__)
+bot_formatter = logging.Formatter(logger_format) # Creamos el formato de los logs
+bot_change_file_handler.setFormatter(bot_formatter) # Le pasamos el formato el rotatingFileHandler
 
-# Creamos otro logger para guardar cuando se 
+# Creamos el bot_logger
+bot_logger = logging.getLogger('bot_logger') # Creamos el bot con e nombre especificado
+bot_logger.setLevel(logging.INFO) # Le establecemos el nivel minimo de informacion
+bot_logger.addHandler(bot_change_file_handler) # Le pasamos el file handler
+bot_logger.addHandler(logging.StreamHandler())  # Establecemos que la informacion tambien se muestre en la consola
+
+# Configuración para el logger de manga
 manga_logs_path = ju.get_config_var("logs_path") + "manga_updates/today.log"
-
-# Creamos un handle para que el logger cree un archivo para cada dia
-suffix = '%Y-%m-%d.log'
-manga_change_file_handler = TimedRotatingFileHandler(manga_logs_path, when="midnight", backupCount=30) # BackupCount: Numero de archivos maximos de logs a conservar
+manga_change_file_handler = TimedRotatingFileHandler(manga_logs_path, when="midnight", backupCount=30)
 manga_change_file_handler.suffix = suffix 
 
-# Configura el formato del log
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO,
-    handlers=[
-        manga_change_file_handler
-    ]
-)
+manga_formatter = logging.Formatter(logger_format)
+manga_change_file_handler.setFormatter(manga_formatter)
 
-manga_logger = logging.getLogger(__name__)
+manga_logger = logging.getLogger('manga_logger')
+manga_logger.setLevel(logging.INFO)
+manga_logger.addHandler(manga_change_file_handler)
 
 # Private vars
 __manga_checker_box_passwd = ju.get_sign_up_passwd()

@@ -27,10 +27,12 @@ bot_formatter = logging.Formatter(logger_format) # Creamos el formato de los log
 bot_change_file_handler.setFormatter(bot_formatter) # Le pasamos el formato el rotatingFileHandler
 
 # Creamos el bot_logger
-bot_logger = logging.getLogger('bot_logger') # Creamos el bot con e nombre especificado
-bot_logger.setLevel(logging.INFO) # Le establecemos el nivel minimo de informacion
+bot_logger = logging.getLogger("bot_logger") # Creamos el bot con e nombre especificado
 bot_logger.addHandler(bot_change_file_handler) # Le pasamos el file handler
-bot_logger.addHandler(logging.StreamHandler())  # Establecemos que la informacion tambien se muestre en la consola
+console_logger = logging.StreamHandler()
+console_logger.setFormatter(bot_formatter)
+bot_logger.addHandler(console_logger)  # Establecemos que la informacion tambien se muestre en la consola
+bot_logger.setLevel(logging.INFO) # Le establecemos el nivel minimo de informacion
 
 # Configuración para el logger de manga
 manga_logs_path = ju.get_config_var("logs_path") + "manga_updates/today.log"
@@ -41,8 +43,8 @@ manga_formatter = logging.Formatter(logger_format)
 manga_change_file_handler.setFormatter(manga_formatter)
 
 manga_logger = logging.getLogger('manga_logger')
-manga_logger.setLevel(logging.INFO)
 manga_logger.addHandler(manga_change_file_handler)
+manga_logger.setLevel(logging.INFO)
 
 # Private vars
 __manga_checker_box_passwd = ju.get_sign_up_passwd()

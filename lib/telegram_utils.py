@@ -51,34 +51,6 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text(msg)
 
-async def notice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-
-    user_id = update.message.from_user.id
-
-    # Si el escribe el comando no es admin finalizamos salimos del commando
-    if user_id != __adming_id:
-        return None
-    logger.info(f"/NOTICE - Admin user wants to notice a message")
-
-    msg = "Write a message to send to all Manga Checker Box users"
-    await update.message.reply_text(msg)
-
-    # Recibimos el mensaje
-    user_input = update.message.text
-    logger.info(f"/NOTICE - Admin sent the message:\n{user_input}")
-    logger.info(f"/NOTICE - Asking for confirmation")
-
-    reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
-    await update.message.reply_text(
-        f"Are you sure you want to send the message?", reply_markup=reply_markup
-    )
-
-    user_input = update.message.text
-    logger.info(f"/NOTICE - Admin input was: {user_input}")
-    logger.info(f"/NOTICE - Sending the message")
-    await context.bot.send_message(chat_id=user_id, text=user_input)
-
-
 # JOB QUEAU ==============================================================================
 # TRACKING_ALL ---------------------------------------------------------------------------
 async def update_tracking(context: ContextTypes.DEFAULT_TYPE):
@@ -332,6 +304,37 @@ async def tracking_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
         )
 
         return TRACKING_CONFIRMATION
+
+# NOTICE HANDLER ------------------------------------------------------------------------
+
+async def notice_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+
+    user_id = update.message.from_user.id
+
+    # Si el escribe el comando no es admin finalizamos salimos del commando
+    if user_id != __adming_id:
+        return None
+    logger.info(f"/NOTICE - Admin user wants to notice a message")
+
+    msg = "Write a message to send to all Manga Checker Box users"
+    await update.message.reply_text(msg)
+
+    # Recibimos el mensaje
+    user_input = update.message.text
+    logger.info(f"/NOTICE - Admin sent the message:\n{user_input}")
+    logger.info(f"/NOTICE - Asking for confirmation")
+
+    reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
+    await update.message.reply_text(
+        f"Are you sure you want to send the message?", reply_markup=reply_markup
+    )
+
+    user_input = update.message.text
+    logger.info(f"/NOTICE - Admin input was: {user_input}")
+    logger.info(f"/NOTICE - Sending the message")
+    await context.bot.send_message(chat_id=user_id, text=user_input)
+
+
 
 # METHODS ================================================================================
 

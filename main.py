@@ -35,6 +35,16 @@ tracking_handler = ConversationHandler(
     fallbacks=[tu.error]
 )
 
+# NOTICE HANDLER
+# tracking_handler = ConversationHandler(
+#     entry_points=[CommandHandler("notice", tu.notice_start)],
+#     states={
+#         tu.TRACKING_CHECK_URL: [MessageHandler(filters.TEXT, tu.tracking_check_url)],
+#         tu.TRACKING_CONFIRMATION: [MessageHandler(filters.TEXT, tu.tracking_confirmation)]
+#     }, 
+#     fallbacks=[tu.error]
+# )
+
 if __name__ == '__main__':
     application = ApplicationBuilder().token(TOKEN).build()
     job_queue = application.job_queue

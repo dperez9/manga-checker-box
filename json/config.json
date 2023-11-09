@@ -3,7 +3,7 @@
     "sing_up_passwd_path": "key/manga_checker_box_passwd",
     "admin_id": "key/admin_telegram_id",
     "database_path": "db/manga_tracker.db",
-    "logs_path": "logs/bot.log",
+    "logs_path": "logs/",
 
     "update_tracking_time_to_wait": 3600,
     "request_waiting_error_time": 4,

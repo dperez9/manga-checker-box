@@ -15,25 +15,46 @@ from telegram.ext import (
     filters,
 )
 
-logs_path = ju.get_config_var("logs_path")
+
+# Creamos un logger para toda la informacion relacionada con el bot
+bot_logs_path = ju.get_config_var("logs_path") + "bot/today.log"
 
 # Creamos un handle para que el logger cree un archivo para cada dia
 suffix = '%Y-%m-%d.log'
-change_file_handler = TimedRotatingFileHandler(logs_path, when="midnight", backupCount=30) # BackupCount: Numero de archivos maximos de logs a conservar
-change_file_handler.suffix = suffix 
+bot_change_file_handler = TimedRotatingFileHandler(bot_logs_path, when="midnight", backupCount=30) # BackupCount: Numero de archivos maximos de logs a conservar
+bot_change_file_handler.suffix = suffix 
 
 # Configura el formato del log
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO,
     handlers=[
-        change_file_handler,
+        bot_change_file_handler,
         logging.StreamHandler()
     ]
 )
 
 # Crea un nuevo logger con el mismo formato
-logger = logging.getLogger(__name__)
+bot_logger = logging.getLogger(__name__)
+
+# Creamos otro logger para guardar cuando se 
+manga_logs_path = ju.get_config_var("logs_path") + "manga_updates/today.log"
+
+# Creamos un handle para que el logger cree un archivo para cada dia
+suffix = '%Y-%m-%d.log'
+manga_change_file_handler = TimedRotatingFileHandler(manga_logs_path, when="midnight", backupCount=30) # BackupCount: Numero de archivos maximos de logs a conservar
+manga_change_file_handler.suffix = suffix 
+
+# Configura el formato del log
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO,
+    handlers=[
+        manga_change_file_handler
+    ]
+)
+
+manga_logger = logging.getLogger(__name__)
 
 # Private vars
 __manga_checker_box_passwd = ju.get_sign_up_passwd()
@@ -65,22 +86,22 @@ CHECK_PASSWD, RECIEVE_NICK, NICK_CONFIRMATION = range(3) # Le asingamos un numer
 async def sing_up_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     user_id = update.message.from_user.id
-    logger.info(f"/SING_UP - Starting sign up for User ID({user_id})")
+    bot_logger.info(f"/SING_UP - Starting sign up for User ID({user_id})")
 
     # Comprobamos si el usuario ya esta registado
-    logger.info(f"/SING_UP - Checking User ID({user_id}) in database")
+    bot_logger.info(f"/SING_UP - Checking User ID({user_id}) in database")
     if dbu.check_user_id(user_id) == True:
         nick = dbu.select_user_nick(user_id)
-        logger.info(f"/SING_UP - User {nick}({user_id}) found, aborting sign up")
+        bot_logger.info(f"/SING_UP - User {nick}({user_id}) found, aborting sign up")
         already_registered_msg = f"{nick}, you are already registered"
         await context.bot.send_message(chat_id=update.effective_chat.id, text=already_registered_msg)
 
         return ConversationHandler.END
     
-    logger.info(f"/SING_UP - The User ID({user_id}) doesn't exists")
+    bot_logger.info(f"/SING_UP - The User ID({user_id}) doesn't exists")
 
     # Comienza la conversacion y te pide la contrasenia
-    logger.info(f"/SING_UP - Asking to User ID({user_id}) for secret password")
+    bot_logger.info(f"/SING_UP - Asking to User ID({user_id}) for secret password")
     passwd_msg = "Enter the secret password to use the service"
     await update.message.reply_text(passwd_msg)
 
@@ -92,19 +113,19 @@ async def check_passwd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
     # Comprobamos si la contrasenia facilitada es correcta para continuar el resgistro
     user_input = update.message.text.lower()
-    logger.info(f"/SING_UP - The user ID({user_id}) send: {user_input}")
+    bot_logger.info(f"/SING_UP - The user ID({user_id}) send: {user_input}")
     
     # Si la contrasenia es incorrecta avisamos al usuario y terminamos
     if user_input != __manga_checker_box_passwd:
-        logger.info(f"/SING_UP - The user ID({user_id}) send a wrong password")
+        bot_logger.info(f"/SING_UP - The user ID({user_id}) send a wrong password")
         wrong_password_msg = "Wrong password, canceled sign up. To try again write again the /start command"
         await update.message.reply_text(wrong_password_msg)
 
         return ConversationHandler.END
     else:
     # Si la contrasenia es correcta continuamos con el registro y le preguntamos su apodo
-        logger.info(f"/SING_UP - The user ID({user_id}) send the right password")
-        logger.info(f"/SING_UP - Asking to User ID({user_id}) for a nickname")
+        bot_logger.info(f"/SING_UP - The user ID({user_id}) send the right password")
+        bot_logger.info(f"/SING_UP - Asking to User ID({user_id}) for a nickname")
         await update.message.reply_text("What is your nickname?")
 
         return RECIEVE_NICK
@@ -113,10 +134,10 @@ async def recieve_nick(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     
     user_id = update.message.from_user.id
     context.user_data["nickname"] = update.message.text
-    logger.info(f"/SING_UP - User ID({user_id}) send the nickname: {context.user_data['nickname']}")
+    bot_logger.info(f"/SING_UP - User ID({user_id}) send the nickname: {context.user_data['nickname']}")
     
     # Creamos las posibles respuestas a la pregunta
-    logger.info(f"Asking to User ID({user_id}) for nickname confirmation")
+    bot_logger.info(f"Asking to User ID({user_id}) for nickname confirmation")
     reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
     await update.message.reply_text(
         f"The nickname '{context.user_data['nickname']}' is right?", reply_markup=reply_markup
@@ -130,7 +151,7 @@ async def nick_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
     # Ponemos todo en minusculas
     user_input = update.message.text
-    logger.info(f"/SING_UP - User ID({user_id}) anwser: {user_input}")
+    bot_logger.info(f"/SING_UP - User ID({user_id}) anwser: {user_input}")
 
     # De ser un nick valido, registramos al usuario en la base de datos y terminamos
     if user_input == __yes:
@@ -139,7 +160,7 @@ async def nick_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         dbu.insert_user(user_id, nick)
 
         # Le enviamos un mensaje de confirmacion
-        logger.info(f"/SING_UP - Registration completed for {nick} ID({user_id})")
+        bot_logger.info(f"/SING_UP - Registration completed for {nick} ID({user_id})")
         registration_completed_msg = f"Perfect {context.user_data['nickname']}, registration completed!\nSelect /help to see avaliable commands"
         await update.message.reply_text(registration_completed_msg)
 
@@ -147,18 +168,18 @@ async def nick_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     
     # Se ser un nick incorrecto, volveremos a solicitarle un nick
     elif user_input == __no:
-        logger.info(f"/SING_UP - User ID({user_id}) wrote a wrong nickname")
-        logger.info(f"/SING_UP - Asking to User ID({user_id}) for a nickname")
+        bot_logger.info(f"/SING_UP - User ID({user_id}) wrote a wrong nickname")
+        bot_logger.info(f"/SING_UP - Asking to User ID({user_id}) for a nickname")
         await update.message.reply_text("What is your nickname?")
 
         return RECIEVE_NICK
 
     # De ingresar un caracter diferente, volveremos a preguntarle si el nick es valido
     else:
-        logger.info(f"/SING_UP - User ID({user_id}) wrote a invalid answer")
+        bot_logger.info(f"/SING_UP - User ID({user_id}) wrote a invalid answer")
 
         # Creamos las posibles respuestas a la pregunta
-        logger.info(f"/SING_UP - Asking to User ID({user_id}) for nickname confirmation")
+        bot_logger.info(f"/SING_UP - Asking to User ID({user_id}) for nickname confirmation")
         reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
         await update.message.reply_text(
             f"The nickname '{context.user_data['nickname']}' is right?", reply_markup=reply_markup
@@ -173,8 +194,7 @@ async def tracking_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     
     user_id = update.message.from_user.id
     context.user_data["nickname"] = dbu.select_user_nick(user_id)
-    logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Starting tracking process")
-    
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Starting tracking process")
 
     # Le mostramos un mensaje el cual estipule que webs estan disponibles, despues
     # Le pedimos al usuario que nos facilite una URl a la cual hacerle seguimiento
@@ -183,7 +203,7 @@ async def tracking_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     advise_msg = advise_msg + "\nIntroduce a URL to track from one of this pages"
     await update.message.reply_text(advise_msg, parse_mode='Markdown')
 
-    logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Waiting for URL to track")
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Waiting for URL to track")
 
     return TRACKING_CHECK_URL
 
@@ -191,23 +211,23 @@ async def tracking_check_url(update: Update, context: ContextTypes.DEFAULT_TYPE)
     user_id = update.message.from_user.id
     user_input = update.message.text
     context.user_data['url'] = user_input
-    logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - URL introduced: {user_input}")
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - URL introduced: {user_input}")
     
     # Comprobamos si la URL es valida
     error_msg = "The introduced URL is not valid. Select /tracking to introduce a valid URL"
-    logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Checking URL")
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Checking URL")
     web_name = mwu.check_url(user_input)
 
     if web_name == None:
-        logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - The introduced URL is not valid")
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - The introduced URL is not valid")
         await update.message.reply_text(error_msg)
 
         return ConversationHandler.END
 
-    logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - The introduced URL is from {web_name}")
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - The introduced URL is from {web_name}")
 
     if dbu.check_already_tracking(user_id, user_input):
-        logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - {context.user_data['nickname']} is already tracking {user_input}")
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - {context.user_data['nickname']} is already tracking {user_input}")
         await update.message.reply_text(f"You are tracking this series already. To add a new series, select again the /tracking command")
 
         return ConversationHandler.END
@@ -218,20 +238,20 @@ async def tracking_check_url(update: Update, context: ContextTypes.DEFAULT_TYPE)
         manga_name = mwu.check_manga_name(user_input)
     except Exception as error:
         manga_name = None
-        logger.warning(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - There was a problem resolving the name of the series in the URL")
+        bot_logger.warning(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - There was a problem resolving the name of the series in the URL")
     
     if manga_name == None:
-        logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - The introduced URL is not valid, couldn't resolve the manga name")
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - The introduced URL is not valid, couldn't resolve the manga name")
         await update.message.reply_text(error_msg)
 
         return ConversationHandler.END
 
     # Lo guardamos en el contexto de la conversacion
     context.user_data['manga_name'] = manga_name
-    logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - The name of the series is: {context.user_data['manga_name']}")
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - The name of the series is: {context.user_data['manga_name']}")
     
     # Creamos las posibles respuestas a la pregunta
-    logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Asking for track confirmation")
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Asking for track confirmation")
     reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
     await update.message.reply_text(
         f"You want to add '{context.user_data['manga_name']}' to your tracking list?", reply_markup=reply_markup
@@ -245,7 +265,7 @@ async def tracking_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
 
     # Ponemos todo en minusculas
     user_input = update.message.text
-    logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - User answer: {user_input}")
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - User answer: {user_input}")
 
     # De ser un nick valido, registramos al usuario en la base de datos y terminamos
     if user_input == __yes:
@@ -253,31 +273,31 @@ async def tracking_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
         url = context.user_data['url']
         manga_name = context.user_data['manga_name']
 
-        logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Checking if manga is already in database")
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Checking if manga is already in database")
         check = dbu.check_manga_url(url)
 
         if not check:
-            logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - It not registered, creating an entry in database for {manga_name}")
+            bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - It not registered, creating an entry in database for {manga_name}")
             # Cremos una entrada en la base de datos para dicha serie
             web_name = dbu.select_web_name_from_manga_url(url)
             dbu.insert_manga(url, manga_name, "", web_name)
-            logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Entry created")
+            bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Entry created")
 
             # Actualizamos el ultimo capitulo del manga
-            logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Tracking {manga_name} and updating last chapter registered")
+            bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Tracking {manga_name} and updating last chapter registered")
             notify = False
             await tracking(context, web_name, url, manga_name, "", notify)
 
         # Buscamos el capitulo actualizado en la base de datos
         table = dbu.select_manga(url)
         last_chapter = table[0][1] # Fila 0 de la tabla (la unica que hay), posicion 1
-        logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - {manga_name} last chapter is {last_chapter.strip()}")
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - {manga_name} last chapter is {last_chapter.strip()}")
 
         # Introducimos en la tabla tracking la informacion
         dbu.insert_tracking(user_id, url)
-        logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Added to Tracking table the track: {context.user_data['nickname']} - {manga_name}")
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Added to Tracking table the track: {context.user_data['nickname']} - {manga_name}")
 
-        logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Sending final message to user")
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Sending final message to user")
         
         registration_completed_msg = f"Perfect {context.user_data['nickname']}, {manga_name} last chapter is {last_chapter.strip()}. I will let you know with new chapters :P\nTo add a new series selects /tracking"
         await update.message.reply_text(registration_completed_msg)
@@ -286,7 +306,7 @@ async def tracking_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
     
     # Se ser un nick incorrecto, volveremos a solicitarle un nick
     elif user_input == __no:
-        logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - The user didn't save the series")
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - The user didn't save the series")
         dont_save_msg = "The series wasn't save. Select /tracking to introduce a the tracking"
         await update.message.reply_text(dont_save_msg)
 
@@ -294,10 +314,10 @@ async def tracking_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
 
     # De ingresar un caracter diferente, volveremos a preguntarle si el nick es valido
     else:
-        logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - User wrote a invalid answer")
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - User wrote a invalid answer")
 
         # Creamos las posibles respuestas a la pregunta
-        logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Asking for track confirmation")
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Asking for track confirmation")
         reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
         await update.message.reply_text(
             f"You want to add '{context.user_data['manga_name']}' to your tracking list?", reply_markup=reply_markup
@@ -314,15 +334,15 @@ async def notice_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     # Si el escribe el comando no es admin finalizamos salimos del commando
     if user_id != __adming_id:
         return None
-    logger.info(f"/NOTICE - Admin user wants to notice a message")
+    bot_logger.info(f"/NOTICE - Admin user wants to notice a message")
 
     msg = "Write a message to send to all Manga Checker Box users"
     await update.message.reply_text(msg)
 
     # Recibimos el mensaje
     user_input = update.message.text
-    logger.info(f"/NOTICE - Admin sent the message:\n{user_input}")
-    logger.info(f"/NOTICE - Asking for confirmation")
+    bot_logger.info(f"/NOTICE - Admin sent the message:\n{user_input}")
+    bot_logger.info(f"/NOTICE - Asking for confirmation")
 
     reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
     await update.message.reply_text(
@@ -330,8 +350,8 @@ async def notice_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     )
 
     user_input = update.message.text
-    logger.info(f"/NOTICE - Admin input was: {user_input}")
-    logger.info(f"/NOTICE - Sending the message")
+    bot_logger.info(f"/NOTICE - Admin input was: {user_input}")
+    bot_logger.info(f"/NOTICE - Sending the message")
     await context.bot.send_message(chat_id=user_id, text=user_input)
 
 
@@ -340,7 +360,7 @@ async def notice_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
 async def tracking_all(context: ContextTypes.DEFAULT_TYPE, notify: bool):
     
-    logger.info(f"/TRACKING_ALL - Starting tracking all")
+    bot_logger.info(f"/TRACKING_ALL - Starting tracking all")
 
     table = dbu.select_all_manga_table()
     total_manga = len(table)
@@ -355,27 +375,28 @@ async def tracking_all(context: ContextTypes.DEFAULT_TYPE, notify: bool):
         await tracking(context, web_name, url, name, last_chapter, notify)
         await asyncio.sleep(__time_to_wait_between_search)
     
-    logger.info(f"/TRACKING_ALL - Tracked {total_manga} series")
+    bot_logger.info(f"/TRACKING_ALL - Tracked {total_manga} series")
 
 async def tracking(context: ContextTypes.DEFAULT_TYPE, web_name: str , url: str, name: str, last_chapter: str, notify: bool):
     # Si ocurre algun error mostrar el mensaje y pasamos al siguiente
-    logger.info(f"/TRACKING_ALL - Tracking: {name} - {web_name}")
+    bot_logger.info(f"/TRACKING_ALL - Tracking: {name} - {web_name}")
 
     try:
         new_chapters = mwu.check_manga(web_name, url, last_chapter)
         if len(new_chapters) > 0:
             if notify:
+                manga_logger.info(__generate_message(name, new_chapters))
                 await notify_users(context, url, name, new_chapters)
             return True
     except Exception as error:
-        logger.warning(f"/TRACKING_ALL - Error while Tracking {name} - {web_name} - {url}\nError message: {error}")    
+        bot_logger.warning(f"/TRACKING_ALL - Error while Tracking {name} - {web_name} - {url}\nError message: {error}")    
         print(f"{error}")
     
     return False
 
 async def notify_users(context: ContextTypes.DEFAULT_TYPE, manga_url: str, name: str, new_chapters: dict):
     
-    logger.info(f"/TRACKING_ALL - Notifying users about {name} new chapters")
+    bot_logger.info(f"/TRACKING_ALL - Notifying users about {name} new chapters")
     table = dbu.select_users_tracking_manga(manga_url)
 
     # Generamos un mensaje y notificamos a todos los users que sigan dicho link
@@ -383,12 +404,12 @@ async def notify_users(context: ContextTypes.DEFAULT_TYPE, manga_url: str, name:
         user_id = row[0]
         msg = __generate_message(name, new_chapters)
 
-        logger.info(f"/TRACKING_ALL - User ID({user_id}) recieved a notification: {msg}")
+        bot_logger.info(f"/TRACKING_ALL - User ID({user_id}) recieved a notification: {msg}")
         await context.bot.send_message(chat_id=user_id, text=msg)
 
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
-    logger.info(f"User ID({user_id}) canceled the conversation")
+    bot_logger.info(f"User ID({user_id}) canceled the conversation")
     await update.message.reply_text(
         f"Bye! I hope we can talk again some day.", reply_markup=ReplyKeyboardRemove()
     )

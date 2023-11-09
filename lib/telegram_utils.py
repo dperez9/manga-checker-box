@@ -29,8 +29,8 @@ bot_change_file_handler.setFormatter(bot_formatter) # Le pasamos el formato el r
 # Creamos el bot_logger
 bot_logger = logging.getLogger("bot_logger") # Creamos el bot con e nombre especificado
 bot_logger.addHandler(bot_change_file_handler) # Le pasamos el file handler
-console_logger = logging.StreamHandler()
-console_logger.setFormatter(bot_formatter)
+console_logger = logging.StreamHandler() # Creamos un handler que nos permita visualizar los logs tambien por consola
+console_logger.setFormatter(bot_formatter) # Le aplicamos el formato de los logs
 bot_logger.addHandler(console_logger)  # Establecemos que la informacion tambien se muestre en la consola
 bot_logger.setLevel(logging.INFO) # Le establecemos el nivel minimo de informacion
 

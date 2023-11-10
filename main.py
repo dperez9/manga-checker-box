@@ -35,6 +35,16 @@ tracking_handler = ConversationHandler(
     fallbacks=[tu.error]
 )
 
+# NOTICE HANDLER
+notice_handler = ConversationHandler(
+    entry_points=[CommandHandler("notice", tu.notice_start)],
+    states={
+        tu.NOTICE_ASK_CONFIRMATION: [MessageHandler(filters.TEXT, tu.notice_ask_confirmation)],
+        tu.NOTICE_CONFIRMATION: [MessageHandler(filters.TEXT, tu.notice_confirmation)]
+    }, 
+    fallbacks=[tu.error]
+)
+
 if __name__ == '__main__':
     application = ApplicationBuilder().token(TOKEN).build()
     job_queue = application.job_queue
@@ -44,6 +54,7 @@ if __name__ == '__main__':
 
     # CommandHandlers
     application.add_handler(help_handler)
+    application.add_handler(notice_handler)
     application.add_handler(sign_up_handler)
     application.add_handler(tracking_handler)
 

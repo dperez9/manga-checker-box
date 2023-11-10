@@ -36,14 +36,14 @@ tracking_handler = ConversationHandler(
 )
 
 # NOTICE HANDLER
-# tracking_handler = ConversationHandler(
-#     entry_points=[CommandHandler("notice", tu.notice_start)],
-#     states={
-#         tu.TRACKING_CHECK_URL: [MessageHandler(filters.TEXT, tu.tracking_check_url)],
-#         tu.TRACKING_CONFIRMATION: [MessageHandler(filters.TEXT, tu.tracking_confirmation)]
-#     }, 
-#     fallbacks=[tu.error]
-# )
+notice_handler = ConversationHandler(
+    entry_points=[CommandHandler("notice", tu.notice_start)],
+    states={
+        tu.NOTICE_ASK_CONFIRMATION: [MessageHandler(filters.TEXT, tu.notice_ask_confirmation)],
+        tu.NOTICE_CONFIRMATION: [MessageHandler(filters.TEXT, tu.notice_confirmation)]
+    }, 
+    fallbacks=[tu.error]
+)
 
 if __name__ == '__main__':
     application = ApplicationBuilder().token(TOKEN).build()
@@ -51,11 +51,10 @@ if __name__ == '__main__':
 
     # Commands
     help_handler = CommandHandler('help', tu.help)
-    #notice_handler = CommandHandler('notice', tu.notice)
 
     # CommandHandlers
     application.add_handler(help_handler)
-    #application.add_handler(notice_handler)
+    application.add_handler(notice_handler)
     application.add_handler(sign_up_handler)
     application.add_handler(tracking_handler)
 

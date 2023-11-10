@@ -5,6 +5,7 @@ from logging.handlers import TimedRotatingFileHandler
 import lib.database_utils as dbu
 import lib.manga_web_utils as mwu
 import lib.json_utils as ju
+import lib.logger_utils as lu
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
     Application,
@@ -15,41 +16,13 @@ from telegram.ext import (
     filters,
 )
 
-logger_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-suffix = '%Y-%m-%d.log'
-
-# Configuración para el logger del bot
-bot_logs_path = ju.get_config_var("logs_path") + "bot/today.log" 
-bot_change_file_handler = TimedRotatingFileHandler(bot_logs_path, when="midnight", backupCount=30) # Nos permitara ir actualizando el fichero log dia tras dia
-bot_change_file_handler.suffix = suffix # Establecemos el nombre que tendra el fichero
-
-bot_formatter = logging.Formatter(logger_format) # Creamos el formato de los logs
-bot_change_file_handler.setFormatter(bot_formatter) # Le pasamos el formato el rotatingFileHandler
-
-# Creamos el bot_logger
-bot_logger = logging.getLogger() # Creamos el bot con e nombre del paquete (__name__)
-bot_logger.setLevel(logging.INFO) # Le establecemos el nivel minimo de informacion
-bot_logger.addHandler(bot_change_file_handler) # Le pasamos el file handler
-console_logger = logging.StreamHandler() # Creamos un handler que nos permita visualizar los logs tambien por consola
-console_logger.setFormatter(bot_formatter) # Le aplicamos el formato de los logs
-bot_logger.addHandler(console_logger)  # Establecemos que la informacion tambien se muestre en la consola
-
-# Configuración para el logger de manga
-manga_logs_path = ju.get_config_var("logs_path") + "manga_updates/today.log"
-manga_change_file_handler = TimedRotatingFileHandler(manga_logs_path, when="midnight", backupCount=30)
-manga_change_file_handler.suffix = suffix 
-
-manga_formatter = logging.Formatter(logger_format)
-manga_change_file_handler.setFormatter(manga_formatter)
-
-manga_logger = logging.getLogger('manga_logger')
-
-manga_logger.addHandler(manga_change_file_handler)
-
+# Obtemos los loggers
+bot_logger = lu.bot_logger
+manga_logger = lu.manga_logger
 
 # Private vars
 __manga_checker_box_passwd = ju.get_sign_up_passwd()
-__adming_id = ju.get_admin_id()
+__admin_id = ju.get_admin_id()
 __time_to_wait_between_search = ju.get_config_var("time_to_wait_between_search") # Segundos
 __yes = "Yes"
 __no = "No"
@@ -317,33 +290,63 @@ async def tracking_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
         return TRACKING_CONFIRMATION
 
 # NOTICE HANDLER ------------------------------------------------------------------------
-
+NOTICE_ASK_CONFIRMATION, NOTICE_CONFIRMATION = range(2) # Le asingamos un numero a cada estado
 async def notice_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     user_id = update.message.from_user.id
 
     # Si el escribe el comando no es admin finalizamos salimos del commando
-    if user_id != __adming_id:
-        return None
+    if str(user_id) != __admin_id:
+        bot_logger.info(f"/NOTICE - A non user admin ID({user_id}) tried to send a notice")
+        return ConversationHandler.END
+    
     bot_logger.info(f"/NOTICE - Admin user wants to notice a message")
 
     msg = "Write a message to send to all Manga Checker Box users"
     await update.message.reply_text(msg)
 
+    return NOTICE_ASK_CONFIRMATION
+
+async def notice_ask_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+
     # Recibimos el mensaje
     user_input = update.message.text
+    context.user_data['notice_msg'] = user_input
     bot_logger.info(f"/NOTICE - Admin sent the message:\n{user_input}")
     bot_logger.info(f"/NOTICE - Asking for confirmation")
 
     reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
     await update.message.reply_text(
-        f"Are you sure you want to send the message?", reply_markup=reply_markup
+        f"Are you sure you want to send this message?", reply_markup=reply_markup
     )
 
+    return NOTICE_CONFIRMATION
+
+async def notice_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    
     user_input = update.message.text
     bot_logger.info(f"/NOTICE - Admin input was: {user_input}")
-    bot_logger.info(f"/NOTICE - Sending the message")
-    await context.bot.send_message(chat_id=user_id, text=user_input)
+
+    if user_input == __yes:
+        bot_logger.info(f"/NOTICE - Admin accepted send the message")
+        await notify_users_msg(context, context.user_data['notice_msg'])
+        return ConversationHandler.END
+    
+    elif user_input == __no:
+        bot_logger.info(f"/NOTICE - Admin discharged the message")
+        return ConversationHandler.END
+    
+    else:
+        bot_logger.info(f"/NOTICE - Asking for confirmation again")
+
+        reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
+        await update.message.reply_text(
+            f"Are you sure you want to send this message?", reply_markup=reply_markup
+        )
+        return NOTICE_CONFIRMATION
+
+
+
 
 
 
@@ -377,7 +380,7 @@ async def tracking(context: ContextTypes.DEFAULT_TYPE, web_name: str , url: str,
         if len(new_chapters) > 0:
             if notify:
                 manga_logger.info(__generate_message(name, new_chapters))
-                await notify_users(context, url, name, new_chapters)
+                await notify_users_manga(context, url, name, new_chapters)
             return True
     except Exception as error:
         bot_logger.warning(f"/TRACKING_ALL - Error while Tracking {name} - {web_name} - {url}\nError message: {error}")    
@@ -385,7 +388,7 @@ async def tracking(context: ContextTypes.DEFAULT_TYPE, web_name: str , url: str,
     
     return False
 
-async def notify_users(context: ContextTypes.DEFAULT_TYPE, manga_url: str, name: str, new_chapters: dict):
+async def notify_users_manga(context: ContextTypes.DEFAULT_TYPE, manga_url: str, name: str, new_chapters: dict):
     
     bot_logger.info(f"/TRACKING_ALL - Notifying users about {name} new chapters")
     table = dbu.select_users_tracking_manga(manga_url)
@@ -396,6 +399,19 @@ async def notify_users(context: ContextTypes.DEFAULT_TYPE, manga_url: str, name:
         msg = __generate_message(name, new_chapters)
 
         bot_logger.info(f"/TRACKING_ALL - User ID({user_id}) recieved a notification: {msg}")
+        await context.bot.send_message(chat_id=user_id, text=msg)
+
+async def notify_users_msg(context: ContextTypes.DEFAULT_TYPE, msg: str):
+    
+    bot_logger.info(f"/NOTICE - Notifying message to all users")
+    table = dbu.select_all_users_table()
+
+    # Enviamos el mensaje a todos los usuarios
+    for row in table:
+        user_id = row[0]
+        user_nick = row[1]
+
+        bot_logger.info(f"/NOTICE - Notifying {user_nick} ID({user_id})")
         await context.bot.send_message(chat_id=user_id, text=msg)
 
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):

@@ -75,6 +75,20 @@ def select_manga(url: str):
 
     return table
 
+def select_all_users_table():
+    # Conexion con la base de datos
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    # Consulta para seleccionar todos los registros de la tabla MANGA
+    query = 'SELECT ID, NICK FROM USERS'
+    cursor.execute(query)
+
+    table = cursor.fetchall()
+    conn.close()
+
+    return table
+
 def select_all_manga_table():
     # Conexion con la base de datos
     conn = sqlite3.connect(database_path)

@@ -119,6 +119,28 @@ def select_users_tracking_manga(manga_url: str):
 
     return table
 
+def select_user_manga_list(user_id: str):
+    # Conectamos con la base de datos
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    # Consulta para seleccionar USER_ID y NAME en función de MANGA_URL
+    query = '''
+        SELECT MANGA.*
+        FROM TRACKING
+        JOIN MANGA ON TRACKING.MANGA_URL = MANGA.URL
+        WHERE TRACKING.USER_ID = ?
+    '''
+    cursor.execute(query, (user_id,))
+
+    table = cursor.fetchall()
+
+    # Cerrar la conexión con la base de datos
+    conn.close()
+
+    return table
+
+
 def select_available_webs():
     # Conectamos con la base de datos
     conn = sqlite3.connect(database_path)

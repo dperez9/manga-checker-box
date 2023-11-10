@@ -35,6 +35,15 @@ tracking_handler = ConversationHandler(
     fallbacks=[tu.error]
 )
 
+# UNTRACKING HANDLER
+untracking_handler = ConversationHandler(
+    entry_points=[CommandHandler("untracking", tu.untracking_start)],
+    states={
+        
+    }, 
+    fallbacks=[tu.error]
+)
+
 # NOTICE HANDLER
 notice_handler = ConversationHandler(
     entry_points=[CommandHandler("notice", tu.notice_start)],
@@ -57,6 +66,7 @@ if __name__ == '__main__':
     application.add_handler(notice_handler)
     application.add_handler(sign_up_handler)
     application.add_handler(tracking_handler)
+    application.add_handler(untracking_handler)
 
     # Jobs
     application.job_queue.run_repeating(tu.update_tracking, interval=update_tracking_time_to_wait, first=5)

@@ -289,8 +289,65 @@ async def tracking_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
 
         return TRACKING_CONFIRMATION
 
+# UNTRACKING HANDLER ------------------------------------------------------------------------
+UNTRACKING_ASK_CONFIRMATION, UNTRACKING_CONFIRMATION = range(2) # Le asingamos un numero a cada estado
+
+async def untracking_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+
+    user_id = update.message.from_user.id
+    context.user_data["nickname"] = dbu.select_user_nick(user_id)
+
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - Started untracking process")
+    manga_table = dbu.select_user_manga_list(user_id)
+    context.user_data["manga_table"] = manga_table
+
+    if len(manga_table) == 0:
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - User is not tracking any series")
+        await update.message.reply_text(f"You are not tracking any series")
+        context.user_data["manga_table"] = None
+        return ConversationHandler.END
+    
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - Generating untracking list message")
+    untracking_list_msg = __generate_untracking_list_msg(manga_table)
+    await update.message.reply_text(untracking_list_msg)
+
+    return UNTRACKING_ASK_CONFIRMATION
+
+async def untracking_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+
+    user_id = update.message.from_user.id
+    user_input = update.message.text
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - User sent: {user_input}")
+    
+    # Comprobamos si quiere cancelar el proceso
+    if user_input == "/cancel":
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - User abort the untracking process")
+        await update.message.reply_text(f"Aborted untracking process")
+        context.user_data["manga_table"] = None
+        return ConversationHandler.END
+    
+    # Comprobamos que el numero enviado por el usuario es una respuesta valida. El usuario debe devolver algo como esto: '/1', '/4', '/12' 
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - Reading manga series number selection")
+    selection_number = __get_untracking_selection_number(user_input)
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - The number recognized was: '{selection_number+1}'")
+
+    # Si no se ha detectado una seleccion terminamos
+    if selection_number == None:
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - The number recognized was: '{selection_number+1}'")
+        await update.message.reply_text(f"I couldn't recognized a number selection. Aborted untracking process")
+        context.user_data["manga_table"] = None
+        return ConversationHandler.END
+    
+    # Eliminamos el seguimiento del usuario
+    manga_table = context.user_data["manga_table"]
+    manga_del = manga_table[selection_number]
+
+    return UNTRACKING_ASK_CONFIRMATION
+
+
 # NOTICE HANDLER ------------------------------------------------------------------------
 NOTICE_ASK_CONFIRMATION, NOTICE_CONFIRMATION = range(2) # Le asingamos un numero a cada estado
+
 async def notice_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     user_id = update.message.from_user.id
@@ -344,11 +401,6 @@ async def notice_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
             f"Are you sure you want to send this message?", reply_markup=reply_markup
         )
         return NOTICE_CONFIRMATION
-
-
-
-
-
 
 # METHODS ================================================================================
 
@@ -454,4 +506,33 @@ def __generate_available_webs_msg():
         msg = msg + f"{name} - {url}\n"
     
     return msg
+
+def __generate_untracking_list_msg(manga_table: list):
     
+    output = "Select a series to untrack (press the number attach to the series):\n"
+    i = 0
+    for row in manga_table:
+        name = row[1]
+        web_name = row[3]
+        output = output + f"   /{i+1} - {name} - {web_name}\n"
+        i = i+1 
+
+    output = output + f"Press /cancel to abort the operation"
+    return output
+
+def __get_untracking_selection_number(selection: str):
+
+    output = None
+    # Verifica si el texto comienza con '/'
+    if selection.startswith('/'):
+        # Extrae la parte numérica
+        text_number = selection[1:]
+
+        try:
+            # Intentamos convertir el numero en un int
+            number = int(text_number)-1
+            output = number
+        except ValueError:
+            # En caso de que no se pueda convertir devolvemos None
+            pass
+    return output

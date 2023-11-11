@@ -313,7 +313,7 @@ async def untracking_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     return UNTRACKING_ASK_CONFIRMATION
 
-async def untracking_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def untracking_ask_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     user_id = update.message.from_user.id
     user_input = update.message.text
@@ -329,21 +329,74 @@ async def untracking_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     # Comprobamos que el numero enviado por el usuario es una respuesta valida. El usuario debe devolver algo como esto: '/1', '/4', '/12' 
     bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - Reading manga series number selection")
     selection_number = __get_untracking_selection_number(user_input)
-    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - The number recognized was: '{selection_number+1}'")
+    
 
     # Si no se ha detectado una seleccion terminamos
     if selection_number == None:
-        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - The number recognized was: '{selection_number+1}'")
         await update.message.reply_text(f"I couldn't recognized a number selection. Aborted untracking process")
         context.user_data["manga_table"] = None
         return ConversationHandler.END
     
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - The number recognized was: '{selection_number+1}'")
+
     # Eliminamos el seguimiento del usuario
     manga_table = context.user_data["manga_table"]
     manga_del = manga_table[selection_number]
+    context.user_data['manga_url'] = manga_del[0] # Obtenemos la URL en la posicion 0
+    context.user_data['manga_name'] = manga_del[1] # Obtenemos la URL en la posicion 1
+    context.user_data['manga_web'] = manga_del[3] # Obtenemos la URL en la posicion 3
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - User selected: {context.user_data['manga_name']} - {context.user_data['manga_web']}")
+    
+    # Creamos las posibles respuestas a la pregunta
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - Asking for untrack confirmation")
+    reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
+    await update.message.reply_text(
+        f"You want to remove '{context.user_data['manga_name']} - {context.user_data['manga_web']}' from your tracking list?", reply_markup=reply_markup
+    )
 
-    return UNTRACKING_ASK_CONFIRMATION
+    return UNTRACKING_CONFIRMATION
 
+async def untracking_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+
+    user_input = update.message.text
+    user_id = update.message.from_user.id
+    manga_url = context.user_data['manga_url'] 
+    manga_name = context.user_data['manga_name']
+    manga_web = context.user_data['manga_web']
+
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - User input was: {user_input}")
+
+    if user_input == __yes:
+        dbu.delete_tracking_row(user_id, manga_url)
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - Removed tracking for {manga_name}")
+
+        # Comprobamos que haya alguna mas gente siguiendo dicho manga, en caso contrario lo eliminamos de la tabla MANGA
+        users_table = dbu.select_users_tracking_manga(manga_url)
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - The series '{manga_name} - {manga_web}' is follow by {len(users_table)}")
+        if len(users_table) == 0:
+            bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - It is necesary remove it form MANGA table")
+            dbu.delete_manga(manga_url)
+            bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - The series '{manga_name} - {manga_web}' was removed form MANGA table")
+        
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - Sending final message")
+        await update.message.reply_text(f"{manga_name} - {manga_web} was removed. To untracking another one, select or write /untracking")    
+        return ConversationHandler.END
+        
+    elif user_input == __no:
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - User canceled untracking process")
+        await update.message.reply_text(f"To remove another series select or write /untracking")
+        return ConversationHandler.END
+    
+    else:
+        # Creamos las posibles respuestas a la pregunta
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - Asking for untrack confirmation")
+        reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
+        await update.message.reply_text(
+            f"You want to remove '{context.user_data['manga_name']} - {context.user_data['manga_web']}' from your tracking list?", reply_markup=reply_markup
+        )
+
+        return UNTRACKING_CONFIRMATION
+    
 
 # NOTICE HANDLER ------------------------------------------------------------------------
 NOTICE_ASK_CONFIRMATION, NOTICE_CONFIRMATION = range(2) # Le asingamos un numero a cada estado
@@ -391,6 +444,7 @@ async def notice_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     elif user_input == __no:
         bot_logger.info(f"/NOTICE - Admin discharged the message")
+        await update.message.reply_text("The message was not send")
         return ConversationHandler.END
     
     else:
@@ -412,21 +466,21 @@ async def tracking_all(context: ContextTypes.DEFAULT_TYPE, notify: bool):
     total_manga = len(table)
 
     # Recorrer los registros y obtener los valores
+    i = 1
     for row in table:
         url = row[0]
         name = row[1]
         last_chapter = row[2]
         web_name = row[3]
-        
+        bot_logger.info(f"/TRACKING_ALL - Tracking({i}/{total_manga}): {name} - {web_name}")
         await tracking(context, web_name, url, name, last_chapter, notify)
         await asyncio.sleep(__time_to_wait_between_search)
+        i = i+1
     
-    bot_logger.info(f"/TRACKING_ALL - Tracked {total_manga} series")
+    #bot_logger.info(f"/TRACKING_ALL - Tracked {total_manga} series")
 
 async def tracking(context: ContextTypes.DEFAULT_TYPE, web_name: str , url: str, name: str, last_chapter: str, notify: bool):
     # Si ocurre algun error mostrar el mensaje y pasamos al siguiente
-    bot_logger.info(f"/TRACKING_ALL - Tracking: {name} - {web_name}")
-
     try:
         new_chapters = mwu.check_manga(web_name, url, last_chapter)
         if len(new_chapters) > 0:
@@ -509,15 +563,15 @@ def __generate_available_webs_msg():
 
 def __generate_untracking_list_msg(manga_table: list):
     
-    output = "Select a series to untrack (press the number attach to the series):\n"
+    output = "Select a series to untrack (press the number attach to the series):\n\n"
     i = 0
     for row in manga_table:
         name = row[1]
         web_name = row[3]
-        output = output + f"   /{i+1} - {name} - {web_name}\n"
+        output = output + f"/{i+1} - {name} - {web_name}\n"
         i = i+1 
 
-    output = output + f"Press /cancel to abort the operation"
+    output = output + f"\nPress /cancel to abort the operation"
     return output
 
 def __get_untracking_selection_number(selection: str):

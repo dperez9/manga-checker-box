@@ -39,7 +39,8 @@ tracking_handler = ConversationHandler(
 untracking_handler = ConversationHandler(
     entry_points=[CommandHandler("untracking", tu.untracking_start)],
     states={
-        
+        tu.UNTRACKING_ASK_CONFIRMATION: [MessageHandler(filters.TEXT, tu.untracking_ask_confirmation)],
+        tu.UNTRACKING_CONFIRMATION: [MessageHandler(filters.TEXT, tu.untracking_confirmation)]
     }, 
     fallbacks=[tu.error]
 )

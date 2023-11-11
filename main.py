@@ -1,4 +1,3 @@
-import logging
 import lib.telegram_utils as tu
 import lib.json_utils as ju
 from telegram.ext import (
@@ -35,6 +34,16 @@ tracking_handler = ConversationHandler(
     fallbacks=[tu.error]
 )
 
+# UNTRACKING HANDLER
+untracking_handler = ConversationHandler(
+    entry_points=[CommandHandler("untracking", tu.untracking_start)],
+    states={
+        tu.UNTRACKING_ASK_CONFIRMATION: [MessageHandler(filters.TEXT, tu.untracking_ask_confirmation)],
+        tu.UNTRACKING_CONFIRMATION: [MessageHandler(filters.TEXT, tu.untracking_confirmation)]
+    }, 
+    fallbacks=[tu.error]
+)
+
 # NOTICE HANDLER
 notice_handler = ConversationHandler(
     entry_points=[CommandHandler("notice", tu.notice_start)],
@@ -49,14 +58,20 @@ if __name__ == '__main__':
     application = ApplicationBuilder().token(TOKEN).build()
     job_queue = application.job_queue
 
-    # Commands
+    # Simple Commands
     help_handler = CommandHandler('help', tu.help)
+    tracking_list_handler = CommandHandler('tracking_list', tu.tracking_list)
 
-    # CommandHandlers
+    # Complex Commands - CommandHandlers
     application.add_handler(help_handler)
+    application.add_handler(tracking_list_handler)
     application.add_handler(notice_handler)
     application.add_handler(sign_up_handler)
     application.add_handler(tracking_handler)
+    application.add_handler(untracking_handler)
+
+    # Reply to no Commands
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, tu.unrecognized_command))
 
     # Jobs
     application.job_queue.run_repeating(tu.update_tracking, interval=update_tracking_time_to_wait, first=5)

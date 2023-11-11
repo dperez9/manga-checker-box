@@ -32,7 +32,8 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "Here you got the avaliable commands list:\n"\
         "/start - Starts the bot\n" \
         "/help - Shows you avaliable commands\n" \
-        "/tracking - Add a new series to your tracking"
+        "/tracking - Add a new series to your tracking list" \
+        "/untracking  - Remove a series of your tracking list"
     
     await update.message.reply_text(msg)
 
@@ -322,7 +323,7 @@ async def untracking_ask_confirmation(update: Update, context: ContextTypes.DEFA
     # Comprobamos si quiere cancelar el proceso
     if user_input == "/cancel":
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - User abort the untracking process")
-        await update.message.reply_text(f"Aborted untracking process")
+        await update.message.reply_text(f"Aborted untracking process. To make another action select or write /help")
         context.user_data["manga_table"] = None
         return ConversationHandler.END
     
@@ -333,7 +334,7 @@ async def untracking_ask_confirmation(update: Update, context: ContextTypes.DEFA
 
     # Si no se ha detectado una seleccion terminamos
     if selection_number == None:
-        await update.message.reply_text(f"I couldn't recognized a number selection. Aborted untracking process")
+        await update.message.reply_text(f"I couldn't recognized a number selection. Aborted untracking process. To untrack a series select or write /untracking")
         context.user_data["manga_table"] = None
         return ConversationHandler.END
     
@@ -348,7 +349,7 @@ async def untracking_ask_confirmation(update: Update, context: ContextTypes.DEFA
     bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - User selected: {context.user_data['manga_name']} - {context.user_data['manga_web']}")
     
     # Creamos las posibles respuestas a la pregunta
-    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - Asking for untrack confirmation")
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - Asking for untracking confirmation")
     reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
     await update.message.reply_text(
         f"You want to remove '{context.user_data['manga_name']} - {context.user_data['manga_web']}' from your tracking list?", reply_markup=reply_markup
@@ -372,7 +373,7 @@ async def untracking_confirmation(update: Update, context: ContextTypes.DEFAULT_
 
         # Comprobamos que haya alguna mas gente siguiendo dicho manga, en caso contrario lo eliminamos de la tabla MANGA
         users_table = dbu.select_users_tracking_manga(manga_url)
-        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - The series '{manga_name} - {manga_web}' is follow by {len(users_table)}")
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - The series '{manga_name} - {manga_web}' is follow by {len(users_table)} users")
         if len(users_table) == 0:
             bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - It is necesary remove it form MANGA table")
             dbu.delete_manga(manga_url)
@@ -384,12 +385,12 @@ async def untracking_confirmation(update: Update, context: ContextTypes.DEFAULT_
         
     elif user_input == __no:
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - User canceled untracking process")
-        await update.message.reply_text(f"To remove another series select or write /untracking")
+        await update.message.reply_text(f"The series '{manga_name} - {manga_web}' wasn't remove it. To remove another series select or write /untracking")
         return ConversationHandler.END
     
     else:
         # Creamos las posibles respuestas a la pregunta
-        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - Asking for untrack confirmation")
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - Asking for untracking confirmation")
         reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
         await update.message.reply_text(
             f"You want to remove '{context.user_data['manga_name']} - {context.user_data['manga_web']}' from your tracking list?", reply_markup=reply_markup

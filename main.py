@@ -70,7 +70,7 @@ if __name__ == '__main__':
     application.add_handler(untracking_handler)
 
     # Jobs
-    application.job_queue.run_repeating(tu.update_tracking, interval=update_tracking_time_to_wait, first=5)
+    #application.job_queue.run_repeating(tu.update_tracking, interval=update_tracking_time_to_wait, first=5)
     application.run_polling()
 
     

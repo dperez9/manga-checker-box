@@ -323,18 +323,14 @@ def delete_manga(manga_url: str):
     cursor = conn.cursor()
 
     # Consulta para seleccionar USER_ID y NAME en función de MANGA_URL
-    query = '''
-        DELETE FROM MANGA
-        WHERE URL = ?
-    '''
+    query = 'DELETE FROM MANGA WHERE URL = ?'
     cursor.execute(query, (manga_url,))
 
     table = cursor.fetchall()
 
-    # Cerrar la conexión con la base de datos
+    # Confirmar los cambios y cerrar la conexión con la base de datos
+    conn.commit()
     conn.close()
-
-    return table
 
 def delete_tracking_row(user_id: str, manga_url: str):
 
@@ -343,16 +339,9 @@ def delete_tracking_row(user_id: str, manga_url: str):
     cursor = conn.cursor()
 
     # Consulta para seleccionar USER_ID y NAME en función de MANGA_URL
-    query = '''
-        DELETE FROM TRACKING
-        WHERE USER_ID = ?
-        AND MANGA_URL = ?;
-    '''
+    query = 'DELETE FROM TRACKING WHERE USER_ID = ? AND MANGA_URL = ?'
     cursor.execute(query, (user_id, manga_url))
 
-    table = cursor.fetchall()
-
-    # Cerrar la conexión con la base de datos
+    # Confirmar los cambios y cerrar la conexión con la base de datos
+    conn.commit()
     conn.close()
-
-    return table

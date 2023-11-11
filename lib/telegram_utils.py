@@ -1,20 +1,11 @@
 import asyncio
-import logging
-import time
-from logging.handlers import TimedRotatingFileHandler
 import lib.database_utils as dbu
 import lib.manga_web_utils as mwu
 import lib.json_utils as ju
 import lib.logger_utils as lu
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
-from telegram.ext import (
-    Application,
-    CommandHandler,
-    ConversationHandler,
-    ContextTypes,
-    MessageHandler,
-    filters,
-)
+from telegram.ext import ConversationHandler
+from telegram.ext import ContextTypes
 
 # Obtemos los loggers
 bot_logger = lu.bot_logger
@@ -24,23 +15,47 @@ manga_logger = lu.manga_logger
 __manga_checker_box_passwd = ju.get_sign_up_passwd()
 __admin_id = ju.get_admin_id()
 __time_to_wait_between_search = ju.get_config_var("time_to_wait_between_search") # Segundos
-__yes = "Yes"
-__no = "No"
+__yes = "Yes" # Option message 
+__no = "No" # Option message
 
 # COMMADNS ==============================================================================
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    msg = "Here you got the avaliable commands list:\n"\
+
+    user_id = update.message.from_user.id
+    user_nick = dbu.select_user_nick(user_id)
+    bot_logger.info(f"{user_nick} ID({user_id}) - /HELP - User request help message")
+
+    msg = "Avaliable commands list:\n\n"\
         "/start - Starts the bot\n" \
         "/help - Shows you avaliable commands\n" \
-        "/tracking - Add a new series to your tracking list" \
-        "/untracking  - Remove a series of your tracking list"
+        "/tracking - Add a new series to your tracking list\n" \
+        "/tracking_list - Show your tracking list\n" \
+        "/untracking  - Remove a series of your tracking list\n" \
+        "\nSelect or write one command"
     
+    await update.message.reply_text(msg)
+
+async def unrecognized_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.message.from_user.id
+    user_nick = dbu.select_user_nick(user_id)
+    bot_logger.info(f"{user_nick} ID({user_id}) - /UNRECOGNIZED_COMMAMD - User sent an unrecognized message")
+    await update.message.reply_text("Select or write /help to know what to do")
+
+async def tracking_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    user_id = update.message.from_user.id
+    user_nick = dbu.select_user_nick(user_id)
+    bot_logger.info(f"{user_nick} ID({user_id}) - /TRACKING_LIST - User request tracking list")
+
+    manga_table = dbu.select_user_manga_list(user_id)
+    msg = __generate_tracking_list(manga_table)
+    bot_logger.info(f"{user_nick} ID({user_id}) - /TRACKING_LIST - Sending tracking list")
     await update.message.reply_text(msg)
 
 # JOB QUEAU ==============================================================================
 # TRACKING_ALL ---------------------------------------------------------------------------
 async def update_tracking(context: ContextTypes.DEFAULT_TYPE):
-    notify = True
+    notify = True 
     await tracking_all(context, notify)
 
 # CONVERSATION HANDLER ===================================================================
@@ -58,7 +73,7 @@ async def sing_up_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     if dbu.check_user_id(user_id) == True:
         nick = dbu.select_user_nick(user_id)
         bot_logger.info(f"/SING_UP - User {nick}({user_id}) found, aborting sign up")
-        already_registered_msg = f"{nick}, you are already registered"
+        already_registered_msg = f"{nick}, you are already registered. To see other options select or write /help"
         await context.bot.send_message(chat_id=update.effective_chat.id, text=already_registered_msg)
 
         return ConversationHandler.END
@@ -562,6 +577,17 @@ def __generate_available_webs_msg():
     
     return msg
 
+def __generate_tracking_list(manga_table: list):
+
+    output = "Your tracking list:\n\n"
+    for row in manga_table:
+        name = row[1]
+        web_name = row[3]
+        output = output + f" > {name} - {web_name}\n"
+
+    output = output + "\nSelect or write /help to get the command list"
+    return output
+    
 def __generate_untracking_list_msg(manga_table: list):
     
     output = "Select a series to untrack (press the number attach to the series):\n\n"

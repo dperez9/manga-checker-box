@@ -1,3 +1,4 @@
+import time
 import asyncio
 import lib.database_utils as dbu
 import lib.manga_web_utils as mwu
@@ -15,6 +16,7 @@ manga_logger = lu.manga_logger
 __manga_checker_box_passwd = ju.get_sign_up_passwd()
 __admin_id = ju.get_admin_id()
 __time_to_wait_between_search = ju.get_config_var("time_to_wait_between_search") # Segundos
+__update_manga_list_time = 0
 __yes = "Yes" # Option message 
 __no = "No" # Option message
 
@@ -56,7 +58,13 @@ async def tracking_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # TRACKING_ALL ---------------------------------------------------------------------------
 async def update_tracking(context: ContextTypes.DEFAULT_TYPE):
     notify = True 
+    init_time = time.time()
     await tracking_all(context, notify)
+    end_time = time.time()
+    __update_manga_list_time = end_time - init_time # Guardamos el tiempo en segundos
+    minutes, seconds = divmod(__update_manga_list_time, 60)
+    bot_logger.info(f"/TRACKING_ALL - It took {minutes}:{seconds} minutes")
+    
 
 # CONVERSATION HANDLER ===================================================================
 # SING_UP HANDLER ------------------------------------------------------------------------
@@ -455,7 +463,7 @@ async def notice_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     if user_input == __yes:
         bot_logger.info(f"/NOTICE - Admin accepted send the message")
-        notify_users_msg(context, context.user_data['notice_msg'])
+        await notify_users_msg(context, context.user_data['notice_msg'])
         return ConversationHandler.END
     
     elif user_input == __no:
@@ -595,7 +603,7 @@ def __generate_untracking_list_msg(manga_table: list):
     for row in manga_table:
         name = row[1]
         web_name = row[3]
-        output = output + f"/{i+1} - {name} - {web_name}\n"
+        output = output + f"/{i+1} > {name} - {web_name}\n"
         i = i+1 
 
     output = output + f"\nPress /cancel to abort the operation"

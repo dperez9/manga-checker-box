@@ -1,5 +1,6 @@
 import lib.telegram_utils as tu
 import lib.json_utils as ju
+import lib.time_utils as timu
 from telegram.ext import (
     Application,
     ApplicationBuilder,
@@ -12,6 +13,7 @@ from telegram.ext import (
 
 TOKEN = ju.get_api_token()
 update_tracking_time_to_wait = ju.get_config_var("update_tracking_time_to_wait") # Tiempo en segundos
+initial_tracking_time_wait = timu.seconds_until_next_hour()
 
 # SIGN_UP HANDLER
 sign_up_handler = ConversationHandler(
@@ -74,7 +76,7 @@ if __name__ == '__main__':
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, tu.unrecognized_command))
 
     # Jobs
-    application.job_queue.run_repeating(tu.update_tracking, interval=update_tracking_time_to_wait, first=5)
+    application.job_queue.run_repeating(tu.update_tracking, interval=update_tracking_time_to_wait, first=initial_tracking_time_wait)
     application.run_polling()
 
     

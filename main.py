@@ -62,10 +62,12 @@ if __name__ == '__main__':
 
     # Simple Commands
     help_handler = CommandHandler('help', tu.help)
+    info_handler = CommandHandler('info', tu.info)
     tracking_list_handler = CommandHandler('tracking_list', tu.tracking_list)
 
     # Complex Commands - CommandHandlers
     application.add_handler(help_handler)
+    application.add_handler(info_handler)
     application.add_handler(tracking_list_handler)
     application.add_handler(notice_handler)
     application.add_handler(sign_up_handler)

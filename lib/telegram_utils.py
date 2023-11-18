@@ -16,7 +16,7 @@ manga_logger = lu.manga_logger
 __manga_checker_box_passwd = ju.get_sign_up_passwd()
 __admin_id = ju.get_admin_id()
 __time_to_wait_between_search = ju.get_config_var("time_to_wait_between_search") # Segundos
-__update_manga_list_time = 0
+__update_manga_list_time_last_time = 0
 __yes = "Yes" # Option message 
 __no = "No" # Option message
 
@@ -46,6 +46,30 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(msg)
 
+async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    user_id = update.message.from_user.id
+    user_nick = dbu.select_user_nick(user_id)
+
+    # Si el escribe el comando no es admin finalizamos salimos del commando
+    if str(user_id) != __admin_id:
+        bot_logger.info(f"{user_nick} ID({user_id}) - /INFO - A non user admin ID({user_id}) tried to check the info")
+        return None
+
+    user_count = len(dbu.select_all_users_table())
+    manga_count = len(dbu.select_all_manga_table())
+    minutes, seconds = divmod(__update_manga_list_time_last_time, 60)
+
+    msg = "Bot Info:\n\n" \
+        f"User count: {user_count}\n" \
+        f"Manga count: {manga_count}\n" \
+        f"Last tracking all time: {minutes:.0f}:{seconds:.0f} (min:sec)" \
+        f"\n\nSelect or write /help to get avaliable commands"
+    
+    bot_logger.info(f"{user_nick} ID({user_id}) - /INFO - Sending info to admin")
+    await update.message.reply_text(msg)
+
+
 async def unrecognized_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     user_nick = dbu.select_user_nick(user_id)
@@ -73,8 +97,8 @@ async def update_tracking(context: ContextTypes.DEFAULT_TYPE):
     await tracking_all(context, notify)
     end_time = time.time()
 
-    __update_manga_list_time = end_time - init_time # Guardamos el tiempo en segundos
-    minutes, seconds = divmod(__update_manga_list_time, 60)
+    __update_manga_list_time_last_time = end_time - init_time # Guardamos el tiempo en segundos
+    minutes, seconds = divmod(__update_manga_list_time_last_time, 60)
     bot_logger.info(f"/TRACKING_ALL - It took {minutes:.0f}:{seconds:.0f} (min:sec)")
     
 
@@ -600,7 +624,7 @@ def __generate_available_webs_msg():
 
 def __generate_tracking_list(manga_table: list):
 
-    output = "Your tracking list:\n\n"
+    output = f"Your tracking list - Series {len(manga_table)}:\n\n"
     for row in manga_table:
         name = row[1]
         web_name = row[3]

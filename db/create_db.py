@@ -53,6 +53,12 @@ conn.commit()
 # Ejecuta la consulta de inserción
 query = "INSERT INTO WEBS (NAME, URL, URL_CHECK) VALUES (?, ?, ?)"
 
+# Manga Plus
+web_name = "Manga Plus"
+url = "https://mangaplus.shueisha.co.jp/"
+url_check = "https://mangaplus.shueisha.co.jp/titles/"
+cursor.execute(query, (web_name, url, url_check))
+
 # TuMangaOnline
 web_name = "TuMangaOnline"
 url = "https://visortmo.com/"
@@ -75,6 +81,12 @@ cursor.execute(query, (web_name, url, url_check))
 web_name = "Mangakakalot.tv"
 url = "https://ww6.mangakakalot.tv/"
 url_check = "https://ww6.mangakakalot.tv/"
+cursor.execute(query, (web_name, url, url_check))
+
+# MangaDex
+web_name = "MangaDex"
+url = "https://mangadex.org/"
+url_check = "https://mangadex.org/title/"
 cursor.execute(query, (web_name, url, url_check))
 
 conn.commit()

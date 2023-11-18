@@ -1,6 +1,7 @@
 import json
 
 config_path = "json/config.json"
+record_path = "json/records.json"
 
 def read_json(path:str) -> dict: 
     """
@@ -27,6 +28,15 @@ def read_json(path:str) -> dict:
 def save_json(path, data):
     with open(path, 'w') as file:
         json.dump(data, file, indent=4) # Indent=4 para tener una identacion de 4 espacios en el archivo
+
+def load_record(name: str):
+    data = read_json(record_path)
+    return data[name]
+
+def save_record(name: str, var):
+    data = read_json(record_path)
+    data[name] = var
+    save_json(record_path, data)
 
 def get_config_var(var: str) -> str:
     config_dict = read_json(config_path)

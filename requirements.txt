@@ -1,5 +1,5 @@
 sqlite3
-requests-html
-beautifulsoup4
-python-telegram-bot
+python-telegram-bot==20.6
 python-telegram-bot[job-queue]
+selenium==4.15.2
+beautifulsoup4==4.11.1

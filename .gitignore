@@ -25,3 +25,5 @@ test_bot.py
 test_db.py
 test_mwu.py
 test_py.py
+test_selenium.py
+notas.txt

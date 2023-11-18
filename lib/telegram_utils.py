@@ -200,7 +200,7 @@ async def tracking_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     # Le pedimos al usuario que nos facilite una URl a la cual hacerle seguimiento
     advise_msg = "This is the list of available web pages list:\n\n"
     advise_msg = advise_msg + __generate_available_webs_msg()
-    advise_msg = advise_msg + "\nIntroduce a URL to track from one of this pages"
+    advise_msg = advise_msg + "\nIntroduce a URL to track from one of this pages. It can take a few seconds to analyze the web site"
     await update.message.reply_text(advise_msg, parse_mode='Markdown')
 
     bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Waiting for URL to track")
@@ -214,7 +214,7 @@ async def tracking_check_url(update: Update, context: ContextTypes.DEFAULT_TYPE)
     bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - URL introduced: {user_input}")
     
     # Comprobamos si la URL es valida
-    error_msg = "The introduced URL is not valid. Select /tracking to introduce a valid URL"
+    error_msg = "The introduced URL is not valid. Select /tracking to introduce a valid URL. Other wise select or write /help to get avaliable commands"
     bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Checking URL")
     web_name = mwu.check_url(user_input)
 
@@ -299,7 +299,7 @@ async def tracking_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
 
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Sending final message to user")
         
-        registration_completed_msg = f"Perfect {context.user_data['nickname']}, {manga_name} last chapter is {last_chapter.strip()}. I will let you know with new chapters :P\nTo add a new series selects /tracking"
+        registration_completed_msg = f"Perfect {context.user_data['nickname']}, {manga_name} last chapter is {last_chapter.strip()}. I will let you know with new chapters :P\nTo add a new series select /tracking. Other wise select or write /help to get avaliable commands"
         await update.message.reply_text(registration_completed_msg)
 
         return ConversationHandler.END
@@ -307,7 +307,7 @@ async def tracking_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
     # Se ser un nick incorrecto, volveremos a solicitarle un nick
     elif user_input == __no:
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - The user didn't save the series")
-        dont_save_msg = "The series wasn't save. Select /tracking to introduce a the tracking"
+        dont_save_msg = "The series wasn't save. Select or write /tracking to introduce a the tracking. Other wise select or write /help to get avaliable commands"
         await update.message.reply_text(dont_save_msg)
 
         return ConversationHandler.END
@@ -339,7 +339,7 @@ async def untracking_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     if len(manga_table) == 0:
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - User is not tracking any series")
-        await update.message.reply_text(f"You are not tracking any series")
+        await update.message.reply_text(f"You are not tracking any series. Select or write /help to get avaliable commands")
         context.user_data["manga_table"] = None
         return ConversationHandler.END
     
@@ -358,7 +358,7 @@ async def untracking_ask_confirmation(update: Update, context: ContextTypes.DEFA
     # Comprobamos si quiere cancelar el proceso
     if user_input == "/cancel":
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - User abort the untracking process")
-        await update.message.reply_text(f"Aborted untracking process. To make another action select or write /help")
+        await update.message.reply_text(f"Aborted untracking process. Select or write /help to get avaliable commands")
         context.user_data["manga_table"] = None
         return ConversationHandler.END
     
@@ -369,7 +369,7 @@ async def untracking_ask_confirmation(update: Update, context: ContextTypes.DEFA
 
     # Si no se ha detectado una seleccion terminamos
     if selection_number == None:
-        await update.message.reply_text(f"I couldn't recognized a number selection. Aborted untracking process. To untrack a series select or write /untracking")
+        await update.message.reply_text(f"I couldn't recognized a number selection. Aborted untracking process. To untrack a series select or write /untracking. Other wise select or write /help to get avaliable commands")
         context.user_data["manga_table"] = None
         return ConversationHandler.END
     
@@ -415,12 +415,12 @@ async def untracking_confirmation(update: Update, context: ContextTypes.DEFAULT_
             bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - The series '{manga_name} - {manga_web}' was removed form MANGA table")
         
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - Sending final message")
-        await update.message.reply_text(f"{manga_name} - {manga_web} was removed. To untracking another one, select or write /untracking")    
+        await update.message.reply_text(f"{manga_name} - {manga_web} was removed. To untracking another one, select or write /. Other wise select or write /help to get avaliable commands")    
         return ConversationHandler.END
         
     elif user_input == __no:
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - User canceled untracking process")
-        await update.message.reply_text(f"The series '{manga_name} - {manga_web}' wasn't remove it. To remove another series select or write /untracking")
+        await update.message.reply_text(f"The series '{manga_name} - {manga_web}' wasn't remove it. To remove another series select or write /untracking. Other wise select or write /help to get avaliable commands")
         return ConversationHandler.END
     
     else:
@@ -476,11 +476,12 @@ async def notice_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     if user_input == __yes:
         bot_logger.info(f"/NOTICE - Admin accepted send the message")
         await notify_users_msg(context, context.user_data['notice_msg'])
+        await update.message.reply_text(f"All messages where sent. Select or write /help to get avaliable commands")
         return ConversationHandler.END
     
     elif user_input == __no:
         bot_logger.info(f"/NOTICE - Admin discharged the message")
-        await update.message.reply_text("The message was not send")
+        await update.message.reply_text("The message was not send. Select or write /help to get avaliable commands")
         return ConversationHandler.END
     
     else:

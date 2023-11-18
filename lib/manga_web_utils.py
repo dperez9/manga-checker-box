@@ -2,9 +2,14 @@ import os
 import time
 import sqlite3
 import requests
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import lib.database_utils as dbu 
 import lib.json_utils as ju
+
 # VARs ===========================================================================================
 database_path = ju.get_config_var("database_path")
 request_waiting_error_time = ju.get_config_var("request_waiting_error_time")
@@ -44,6 +49,33 @@ def check_manga_name(url: str):
     if web_name == "Mangakakalot.tv":    
         return check_mangakakalot_tv_url(url)
 
+# MANGA PLUS
+def check_mangaplus_url(url: str):
+    
+    # Copnfiguramos el driver de Selenium
+    driver = webdriver.Chrome()
+
+    # Obtemos la pagina web
+    driver.get(url)
+
+    # Definimos los elementos a buscar
+    chapter_list_class = "TitleDetail-module_main_19fsJ" # Clase que contiene la lista de mangas
+    chapters_class_name = "ChapterListItem-module_title_3Id89" # Clase de los capitulos
+    javascript_wait_time = 10 # Tiempo de espera maximo para cargar la pagina
+
+    #Espera a que los elementos con la clase deseada estén presentes en la web
+    image_alt = WebDriverWait(driver, javascript_wait_time).until(
+        EC.presence_of_element_located((By.CLASS_NAME, chapter_list_class))
+    )
+
+    # Hacemos scroll hacia abajo para que carguen todos los capitulos
+    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+    # Esperar a que la página cargue después del desplazamiento
+    time.sleep(0.5)
+
+
+
 # BATO.TO
 def check_batoto_url(url: str):
     # Importamos la pagina en local
@@ -55,7 +87,7 @@ def check_batoto_url(url: str):
     if response == None:
         raise Exception(f"Error getting access to the web page({url})")
     
-    print("La petición fue aceptada")
+    # print("La petición fue aceptada")
     content = response.content
     
     # Analiza el contenido HTML con BeautifulSoup

@@ -32,9 +32,18 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/help - Shows you avaliable commands\n" \
         "/tracking - Add a new series to your tracking list\n" \
         "/tracking_list - Show your tracking list\n" \
-        "/untracking  - Remove a series of your tracking list\n" \
-        "\nSelect or write one command"
-    
+        "/untracking  - Remove a series of your tracking list\n"
+        
+    if str(user_id) == __admin_id:
+        print("hola")
+        msg = msg + \
+        "\n------------------------------" \
+        "\nAdmin commands list:\n" \
+        "\n/notice - Allow to send a message to all users" \
+        "\n/info - Allow to see how many users and manga are track\n" 
+
+    msg = msg + "\nSelect or write one command"
+
     await update.message.reply_text(msg)
 
 async def unrecognized_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -58,12 +67,15 @@ async def tracking_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # TRACKING_ALL ---------------------------------------------------------------------------
 async def update_tracking(context: ContextTypes.DEFAULT_TYPE):
     notify = True 
+
+    # Calculamos el tiempo que se tarda en actualizar todos los mangas
     init_time = time.time()
     await tracking_all(context, notify)
     end_time = time.time()
+
     __update_manga_list_time = end_time - init_time # Guardamos el tiempo en segundos
     minutes, seconds = divmod(__update_manga_list_time, 60)
-    bot_logger.info(f"/TRACKING_ALL - It took {minutes}:{seconds} minutes")
+    bot_logger.info(f"/TRACKING_ALL - It took {minutes:.0f}:{seconds:.0f} (min:sec)")
     
 
 # CONVERSATION HANDLER ===================================================================

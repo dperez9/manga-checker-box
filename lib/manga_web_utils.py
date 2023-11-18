@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import sqlite3
 import requests
@@ -16,24 +17,6 @@ request_waiting_error_time = ju.get_config_var("request_waiting_error_time")
 headers = ju.get_config_var("headers")
 
 # METHODs ========================================================================================
-
-def check_manga(web_name, url, last_chapter):
-    
-    # Buscamos que pagina web coincide
-    if web_name == "Manga Plus":
-        return check_in_mangaplus(web_name, url, last_chapter)
-    
-    if web_name == "Bato.to":
-        return check_in_batoto(web_name, url, last_chapter)
-    
-    if web_name == "TuMangaOnline":
-        return check_in_visortmo(web_name, url, last_chapter)
-    
-    if web_name == "Mangakakalot":    
-        return check_in_mangakakalot(web_name, url, last_chapter)
-    
-    if web_name == "Mangakakalot.tv":    
-        return check_in_mangakakalot_tv(web_name, url, last_chapter)
 
 def check_manga_name(url: str):
     
@@ -57,6 +40,32 @@ def check_manga_name(url: str):
     
     if web_name == "Mangakakalot.tv":    
         return check_mangakakalot_tv_url(url)
+    
+    if web_name == "MangaDex":    
+        return check_mangadex_url(url)
+
+
+def check_manga(web_name, url, last_chapter):
+    
+    # Buscamos que pagina web coincide
+    if web_name == "Manga Plus":
+        return check_in_mangaplus(web_name, url, last_chapter)
+    
+    if web_name == "Bato.to":
+        return check_in_batoto(web_name, url, last_chapter)
+    
+    if web_name == "TuMangaOnline":
+        return check_in_visortmo(web_name, url, last_chapter)
+    
+    if web_name == "Mangakakalot":    
+        return check_in_mangakakalot(web_name, url, last_chapter)
+    
+    if web_name == "Mangakakalot.tv":    
+        return check_in_mangakakalot_tv(web_name, url, last_chapter)
+
+    if web_name == "MangaDex":    
+        return check_in_mangadex(web_name, url, last_chapter)
+    
 
 # MANGA PLUS
 def check_mangaplus_url(url: str):
@@ -84,7 +93,7 @@ def check_mangaplus_url(url: str):
         raise Exception(f"Error finding manga title({url})")
 
     # Guardamos el titulo
-    manga_title = title.text.title() # title() Deja todas las palabras con la primera en mayuscula y el resto en minuscula
+    manga_title = title.text.title() # title() Deja todas las palabras con la primera en mayuscula y el resto en minusculas
 
     # Cerramos el navegador
     driver.quit()
@@ -113,7 +122,7 @@ def check_in_mangaplus(web_name:str, url: str, last_chapter: str):
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
     # Esperar a que la página cargue después del desplazamiento
-    time.sleep(0.5)
+    time.sleep(0.8)
 
     # Obtiene el HTML de la página después de que se haya cargado completamente
     html = driver.page_source
@@ -509,6 +518,153 @@ def __mangakakalot_tv_search_new_chapters(chapters_list, last_chapter, mangakaka
     
     return new_chapters
 
+# MANGADEX
+def check_mangadex_url(url: str):
+    
+    # Copnfiguramos el driver de Selenium
+    driver = webdriver.Chrome()
+
+    # Obtemos la pagina web
+    try: 
+        driver.get(url)
+    except Exception as error:
+        raise Exception(f"Error requesting the url({url})")
+
+    # Definimos los elementos a buscar
+    manga_name_class = "mb-1"
+    javascript_wait_time = 10 # Tiempo de espera maximo para cargar la pagina
+
+    #Espera a que los elementos con la clase deseada estén presentes en la web
+    manga_title = None
+    try:
+        title = WebDriverWait(driver, javascript_wait_time).until(
+            EC.presence_of_element_located((By.CLASS_NAME, manga_name_class))
+        )
+    except Exception as error:
+        raise Exception(f"Error finding manga title({url})")
+
+    # Guardamos el titulo
+    manga_title = title.text.title() # title() Deja todas las palabras con la primera en mayuscula y el resto en minusculas
+
+    # Cerramos el navegador
+    driver.quit()
+
+    return manga_title
+
+def check_in_mangadex(web_name:str, url: str, last_chapter: str):
+    
+    # Copnfiguramos el driver de Selenium
+    driver = webdriver.Chrome()
+
+    # Obtemos la pagina web
+    driver.get(url)
+
+    # Definimos los elementos a buscar
+    chapter_list_class = "flex-grow" # Clase que contiene la lista de mangas
+    javascript_wait_time = 10 # Tiempo de espera maximo para cargar la pagina
+
+    #Espera a que los elementos con la clase deseada estén presentes en la web
+    WebDriverWait(driver, javascript_wait_time).until(
+        EC.presence_of_element_located((By.CLASS_NAME, chapter_list_class))
+    )
+
+    # Hacemos scroll hacia abajo para que carguen todos los capitulos
+    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+    # Esperar a que la página cargue después del desplazamiento
+    time.sleep(0.8)
+
+    # Obtiene el HTML de la página después de que se haya cargado completamente
+    html = driver.page_source
+
+    # Ahora puedes analizar el HTML con BeautifulSoup
+    soup = BeautifulSoup(html, 'html.parser')
+
+    # Ahora debemos encontrar los enlaces, para ello buscaremos el titulo(Ejemplo): Chapter 156
+    # Sin embargo, la pagina agrupa los capitulos de dos formas distintas.
+
+    # Cuando se sube un primer capitulo, se guarda de una forma, con la etiqueta <a class="flex flex-grow items-center">
+    # Pero cuando se han subido varias versiones del mismo capitulo los agrupa, poniendo el
+    # numero del capitulo y luego varias entrada para cada fansub (conmunmente cada uno en un idioma).
+    # Para ello utilizan la etiqueta <span class="font-bold self-center whitespace-nowrap">
+
+    # Por lo tanto, primero tenemos que identificar los capitulos sueltos y despues seguir los agrupados.
+    # Los capitulos sueltos cuando son agregados empiezan de la misma forma: 'Ch. '
+    # Seguido del numero del capitulo, guion, y el titulo del cap. Cuando estan agrupados, solo ponen el titulo para cada
+    # fansub y el numero del cap viene de cabecera
+
+    # La estrategia sera buscar todos las etiquetas <a> que empiecen por 'Ch. ', para así poder obtener
+    # El numero del capitulo, y despues continuar buscando los capitulos agrupados con <span>. De esta forma,
+    # Buscaremos solo el numero del capitulo y no del titulo (porque puede estar en varios idiomas)
+
+    # Se ha decidido por buscar primero el tipo <a>, y en caso de que no se encuentre buscamos por <span>
+    chapter_a_name = "flex flex-grow items-center"
+    chapters_span_name = "font-bold self-center whitespace-nowrap" # Clase de los capitulos
+
+    # Buscamos por la etiqueta de tipo <a>
+    a_list = soup.find_all("a", class_=chapter_a_name)
+    chapter_list_a = __find_a_mangaplus_chapters(a_list)
+    
+    span_list = soup.find_all("span", class_=chapters_span_name)
+    chapter_list_span = __find_span_mangaplus_chapters(span_list)
+
+    chapter_list = chapter_list_a + chapter_list_span
+
+    # Ordenamos los capitulos, porque pueden estar desordenados al combinar las listas
+    # Función que extrae el número de la cadena
+    extract_number = lambda chapter: float(chapter.split()[-1]) # Dividimos las cadenas del tipo 'Chapter 42' en dos partes, seleccionamos la ultima(el numero) y eso lo usamos para ordenadar
+
+    # Ordenar la lista utilizando el número extraído
+    chapter_list = sorted(chapter_list, key=extract_number, reverse=True)
+     
+    # Buscamos los nuevos capitulos
+    new_chapters = __mangadex_search_new_chapters(chapter_list, last_chapter, url)
+
+    # Si se ha encontrado algun capitulo nuevo lo actualizamos en la base de datos
+    if len(new_chapters)>0:
+        dbu.update_last_chapter(url, new_chapters)
+    
+    return new_chapters
+
+def __find_a_mangaplus_chapters(chapters_list):
+    output = [] # Capitulos validos - Aquellos que empiezan por 'Ch. '
+    start_pattern = "Ch. "
+    end_pattern = " - "
+    for chapter in chapters_list:
+        text = chapter.text[1:] # Quitamos el espacio inicial
+
+        # Buscamos el patron(Ejemplo): Ch. 56 - It's a Wrap
+        number = find_text_between_patterns(text, start_pattern, end_pattern)
+
+        # Si no se ha encontrado, el patron es el siguiente(Ejemplo): Ch. 56 
+        if len(number) == 0:
+            number = find_text_between_patterns(text, start_pattern, "")
+
+        if len(number) > 0:
+            entry = "Chapter "+ number[0]
+            output.append(entry)
+
+    return output
+
+def __find_span_mangaplus_chapters(chapters_list):
+    output = []
+    for chapter in chapters_list:
+        output.append(chapter.text)
+
+    return output
+
+def __mangadex_search_new_chapters(chapters_list, last_chapter, mangadex_url):
+    new_chapters = {}
+    for chapter in chapters_list:
+        # Si encontramos el ultimo capitulo leido hemos terminado o si hemos consultado los 3 ultimos capitulos disponibles
+        if last_chapter == chapter: 
+            break
+
+        # Aniadimos el nombre del nuevo capitulo y su enlace, en este caso el enlace del cap no aparece
+        new_chapters[chapter] = mangadex_url
+    
+    return new_chapters
+
 
 # COMMON METHODs =================================================================================
 
@@ -520,6 +676,38 @@ def check_url(url:str) -> str:
         if url_check in url:
             return web_name
     return None
+
+def find_text_between_patterns(text, start_pattern, end_pattern):
+    """
+    Encuentra el texto entre dos patrones en una cadena de texto.
+
+    Parámetros:
+    - text (str): La cadena de texto en la que se realizará la búsqueda.
+    - start_pattern (str): El patrón de inicio.
+    - end_pattern (str): El patrón de fin.
+
+    Retorna:
+    - matches (list): Una lista de coincidencias encontradas entre los patrones.
+    """
+    matches = []
+
+    # Escapamos los patrones para asegurarnos de que son tratados como texto literal.
+    if end_pattern != "":
+        regex_pattern = re.escape(start_pattern) + "(.*?)" + re.escape(end_pattern)
+        # Usamos re.findall() para encontrar todas las coincidencias entre los patrones.
+        # El uso de re.DOTALL permite que el punto coincida con cualquier carácter, incluyendo saltos de línea.
+        matches = re.findall(regex_pattern, text, re.DOTALL)
+    else:
+        # Error en caso de que el texto sea menor al patron inicial
+        try:
+            start_text = text[0:len(start_pattern)]
+            if start_pattern == start_text:
+                matches = [text[len(start_pattern):]]
+        except:
+            pass
+    
+    # Devolvemos la lista de coincidencias.
+    return matches
 
 def __get_url_domain_db(domain: str):
     # Conectar a la base de datos

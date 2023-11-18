@@ -16,7 +16,6 @@ manga_logger = lu.manga_logger
 __manga_checker_box_passwd = ju.get_sign_up_passwd()
 __admin_id = ju.get_admin_id()
 __time_to_wait_between_search = ju.get_config_var("time_to_wait_between_search") # Segundos
-__update_manga_list_time_last_time = 0
 __yes = "Yes" # Option message 
 __no = "No" # Option message
 
@@ -56,14 +55,17 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
         bot_logger.info(f"{user_nick} ID({user_id}) - /INFO - A non user admin ID({user_id}) tried to check the info")
         return None
 
+    bot_logger.info(f"{user_nick} ID({user_id}) - /INFO - Requesting bot info")
+
     user_count = len(dbu.select_all_users_table())
     manga_count = len(dbu.select_all_manga_table())
-    minutes, seconds = divmod(__update_manga_list_time_last_time, 60)
+    record_update_time_of_the_manga_list = ju.load_record("record_update_time_of_the_manga_list")
+    minutes, seconds = divmod(record_update_time_of_the_manga_list, 60)
 
     msg = "Bot Info:\n\n" \
         f"User count: {user_count}\n" \
         f"Manga count: {manga_count}\n" \
-        f"Last tracking all time: {minutes:.0f}:{seconds:.0f} (min:sec)" \
+        f"Last tracking time: {minutes:.0f}:{seconds:.0f} (min:sec)" \
         f"\n\nSelect or write /help to get avaliable commands"
     
     bot_logger.info(f"{user_nick} ID({user_id}) - /INFO - Sending info to admin")
@@ -97,9 +99,12 @@ async def update_tracking(context: ContextTypes.DEFAULT_TYPE):
     await tracking_all(context, notify)
     end_time = time.time()
 
-    __update_manga_list_time_last_time = end_time - init_time # Guardamos el tiempo en segundos
-    minutes, seconds = divmod(__update_manga_list_time_last_time, 60)
+    record_update_time_of_the_manga_list = end_time - init_time # Guardamos el tiempo en segundos
+    minutes, seconds = divmod(record_update_time_of_the_manga_list, 60)
     bot_logger.info(f"/TRACKING_ALL - It took {minutes:.0f}:{seconds:.0f} (min:sec)")
+    
+    ju.save_record("record_update_time_of_the_manga_list", record_update_time_of_the_manga_list)
+    bot_logger.info(f"/TRACKING_ALL - Time update record saved")
     
 
 # CONVERSATION HANDLER ===================================================================
@@ -222,7 +227,7 @@ async def tracking_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     # Le mostramos un mensaje el cual estipule que webs estan disponibles, despues
     # Le pedimos al usuario que nos facilite una URl a la cual hacerle seguimiento
-    advise_msg = "This is the list of available web pages list:\n\n"
+    advise_msg = "This is the list of available web pages:\n\n"
     advise_msg = advise_msg + __generate_available_webs_msg()
     advise_msg = advise_msg + "\nIntroduce a URL to track from one of this pages. It can take a few seconds to analyze the web site"
     await update.message.reply_text(advise_msg, parse_mode='Markdown')
@@ -618,7 +623,7 @@ def __generate_available_webs_msg():
     for row in table:
         name = row[0]
         url = row[1]
-        msg = msg + f"{name} - {url}\n"
+        msg = msg + f"[{name}]({url})\n"
     
     return msg
 

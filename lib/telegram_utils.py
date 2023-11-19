@@ -4,6 +4,7 @@ import lib.database_utils as dbu
 import lib.manga_web_utils as mwu
 import lib.json_utils as ju
 import lib.logger_utils as lu
+from selenium import webdriver
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import ConversationHandler
 from telegram.ext import ContextTypes
@@ -96,7 +97,18 @@ async def update_tracking(context: ContextTypes.DEFAULT_TYPE):
 
     # Calculamos el tiempo que se tarda en actualizar todos los mangas
     init_time = time.time()
-    await tracking_all(context, notify)
+
+    # Creamos un webdriver para las paginas que lo necesiten
+    bot_logger.info(f"/TRACKING_ALL - Loading web driver")
+    driver = webdriver.Chrome()
+
+    await tracking_all(context, notify, driver)
+
+    # Cerramos le navegador
+    bot_logger.info(f"/TRACKING_ALL - Closing web driver")
+    driver.quit()
+
+    # Guardamos el tiempo final
     end_time = time.time()
 
     record_update_time_of_the_manga_list = end_time - init_time # Guardamos el tiempo en segundos
@@ -394,17 +406,15 @@ async def untracking_ask_confirmation(update: Update, context: ContextTypes.DEFA
     # Comprobamos que el numero enviado por el usuario es una respuesta valida. El usuario debe devolver algo como esto: '/1', '/4', '/12' 
     bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - Reading manga series number selection")
     selection_number = __get_untracking_selection_number(user_input)
-    
 
     # Si no se ha detectado una seleccion terminamos
     if selection_number == None:
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - It couldn't recognized a number selection. Aborted untracking process")
         await update.message.reply_text(f"I couldn't recognized a number selection. Aborted untracking process. To untrack a series select or write /untracking. Other wise select or write /help to get avaliable commands")
-        context.user_data["manga_table"] = None
         return ConversationHandler.END
     
     bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - The number recognized was: '{selection_number+1}'")
 
-    # Eliminamos el seguimiento del usuario
     manga_table = context.user_data["manga_table"]
     manga_del = manga_table[selection_number]
     context.user_data['manga_url'] = manga_del[0] # Obtenemos la URL en la posicion 0
@@ -524,7 +534,7 @@ async def notice_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 # METHODS ================================================================================
 
-async def tracking_all(context: ContextTypes.DEFAULT_TYPE, notify: bool):
+async def tracking_all(context: ContextTypes.DEFAULT_TYPE, notify: bool, driver: webdriver=None):
     
     bot_logger.info(f"/TRACKING_ALL - Starting tracking all")
 
@@ -539,16 +549,16 @@ async def tracking_all(context: ContextTypes.DEFAULT_TYPE, notify: bool):
         last_chapter = row[2]
         web_name = row[3]
         bot_logger.info(f"/TRACKING_ALL - Tracking({i}/{total_manga}): {name} - {web_name}")
-        await tracking(context, web_name, url, name, last_chapter, notify)
+        await tracking(context, web_name, url, name, last_chapter, notify, driver)
         await asyncio.sleep(__time_to_wait_between_search)
         i = i+1
     
     #bot_logger.info(f"/TRACKING_ALL - Tracked {total_manga} series")
 
-async def tracking(context: ContextTypes.DEFAULT_TYPE, web_name: str , url: str, name: str, last_chapter: str, notify: bool):
+async def tracking(context: ContextTypes.DEFAULT_TYPE, web_name: str , url: str, name: str, last_chapter: str, notify: bool, driver: webdriver = None):
     # Si ocurre algun error mostrar el mensaje y pasamos al siguiente
     try:
-        new_chapters = mwu.check_manga(web_name, url, last_chapter)
+        new_chapters = mwu.check_manga(web_name, url, last_chapter, driver)
         if len(new_chapters) > 0:
             if notify:
                 manga_logger.info(__generate_message(name, new_chapters))

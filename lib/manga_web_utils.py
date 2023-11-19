@@ -18,7 +18,7 @@ headers = ju.get_config_var("headers")
 
 # METHODs ========================================================================================
 
-def check_manga_name(url: str):
+def check_manga_name(url: str, driver: webdriver = None):
     
     web_name = check_url(url)
 
@@ -27,7 +27,7 @@ def check_manga_name(url: str):
 
     # Buscamos que pagina web coincide
     if web_name == "Manga Plus":
-        return check_mangaplus_url(url)
+        return check_mangaplus_url(url, driver)
     
     if web_name == "Bato.to":
         return check_batoto_url(url)
@@ -42,14 +42,14 @@ def check_manga_name(url: str):
         return check_mangakakalot_tv_url(url)
     
     if web_name == "MangaDex":    
-        return check_mangadex_url(url)
+        return check_mangadex_url(url, driver)
 
 
-def check_manga(web_name, url, last_chapter):
+def check_manga(web_name, url, last_chapter, driver: webdriver=None):
     
     # Buscamos que pagina web coincide
     if web_name == "Manga Plus":
-        return check_in_mangaplus(web_name, url, last_chapter)
+        return check_in_mangaplus(web_name, url, last_chapter, driver)
     
     if web_name == "Bato.to":
         return check_in_batoto(web_name, url, last_chapter)
@@ -64,14 +64,16 @@ def check_manga(web_name, url, last_chapter):
         return check_in_mangakakalot_tv(web_name, url, last_chapter)
 
     if web_name == "MangaDex":    
-        return check_in_mangadex(web_name, url, last_chapter)
+        return check_in_mangadex(web_name, url, last_chapter, driver)
     
 
 # MANGA PLUS
-def check_mangaplus_url(url: str):
+def check_mangaplus_url(url: str, driver: webdriver=None):
     
-    # Copnfiguramos el driver de Selenium
-    driver = webdriver.Chrome()
+    local_driver = False
+    if driver == None:
+        driver = webdriver.Chrome()
+        local_driver = True
 
     # Obtemos la pagina web
     try: 
@@ -96,14 +98,17 @@ def check_mangaplus_url(url: str):
     manga_title = title.text.title() # title() Deja todas las palabras con la primera en mayuscula y el resto en minusculas
 
     # Cerramos el navegador
-    driver.quit()
+    if local_driver == True:
+        driver.quit()
 
     return manga_title
 
-def check_in_mangaplus(web_name:str, url: str, last_chapter: str):
-    
-    # Copnfiguramos el driver de Selenium
-    driver = webdriver.Chrome()
+def check_in_mangaplus(web_name:str, url: str, last_chapter: str, driver: webdriver=None):
+
+    local_driver = False
+    if driver == None:
+        driver = webdriver.Chrome()
+        local_driver = True
 
     # Obtemos la pagina web
     driver.get(url)
@@ -139,6 +144,9 @@ def check_in_mangaplus(web_name:str, url: str, last_chapter: str):
     if len(new_chapters)>0:
         dbu.update_last_chapter(url, new_chapters)
     
+    if local_driver == True:
+        driver.quit()
+
     return new_chapters
 
 def __mangaplus_search_new_chapters(chapters_list, last_chapter, mangaplus_url):
@@ -519,11 +527,13 @@ def __mangakakalot_tv_search_new_chapters(chapters_list, last_chapter, mangakaka
     return new_chapters
 
 # MANGADEX
-def check_mangadex_url(url: str):
+def check_mangadex_url(url: str, driver: webdriver=None):
     
-    # Copnfiguramos el driver de Selenium
-    driver = webdriver.Chrome()
-
+    local_driver = False
+    if driver == None:
+        driver = webdriver.Chrome()
+        local_driver = True
+    
     # Obtemos la pagina web
     try: 
         driver.get(url)
@@ -546,15 +556,17 @@ def check_mangadex_url(url: str):
     # Guardamos el titulo
     manga_title = title.text.title() # title() Deja todas las palabras con la primera en mayuscula y el resto en minusculas
 
-    # Cerramos el navegador
-    driver.quit()
+    if local_driver == True:
+        driver.quit()
 
     return manga_title
 
-def check_in_mangadex(web_name:str, url: str, last_chapter: str):
-    
-    # Copnfiguramos el driver de Selenium
-    driver = webdriver.Chrome()
+def check_in_mangadex(web_name:str, url: str, last_chapter: str, driver: webdriver=None):
+
+    local_driver = False
+    if driver == None:
+        driver = webdriver.Chrome()
+        local_driver = True
 
     # Obtemos la pagina web
     driver.get(url)
@@ -603,10 +615,10 @@ def check_in_mangadex(web_name:str, url: str, last_chapter: str):
 
     # Buscamos por la etiqueta de tipo <a>
     a_list = soup.find_all("a", class_=chapter_a_name)
-    chapter_list_a = __find_a_mangaplus_chapters(a_list)
+    chapter_list_a = __find_a_mangadex_chapters(a_list)
     
     span_list = soup.find_all("span", class_=chapters_span_name)
-    chapter_list_span = __find_span_mangaplus_chapters(span_list)
+    chapter_list_span = __find_span_mangadex_chapters(span_list)
 
     chapter_list = chapter_list_a + chapter_list_span
 
@@ -624,9 +636,12 @@ def check_in_mangadex(web_name:str, url: str, last_chapter: str):
     if len(new_chapters)>0:
         dbu.update_last_chapter(url, new_chapters)
     
+    if local_driver == True:
+        driver.quit()
+
     return new_chapters
 
-def __find_a_mangaplus_chapters(chapters_list):
+def __find_a_mangadex_chapters(chapters_list):
     output = [] # Capitulos validos - Aquellos que empiezan por 'Ch. '
     start_pattern = "Ch. "
     end_pattern = " - "
@@ -646,7 +661,7 @@ def __find_a_mangaplus_chapters(chapters_list):
 
     return output
 
-def __find_span_mangaplus_chapters(chapters_list):
+def __find_span_mangadex_chapters(chapters_list):
     output = []
     for chapter in chapters_list:
         output.append(chapter.text)

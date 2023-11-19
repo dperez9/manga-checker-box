@@ -124,7 +124,7 @@ async def update_tracking(context: ContextTypes.DEFAULT_TYPE):
 CHECK_PASSWD, RECIEVE_NICK, NICK_CONFIRMATION = range(3) # Le asingamos un numero a cada estado
 
 # Definimos los nombres de los estados del login
-async def sing_up_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def sing_up_start_passwd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     user_id = update.message.from_user.id
     bot_logger.info(f"/SING_UP - Starting sign up for User ID({user_id})")
@@ -147,6 +147,29 @@ async def sing_up_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     await update.message.reply_text(passwd_msg)
 
     return CHECK_PASSWD
+
+async def sing_up_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+
+    user_id = update.message.from_user.id
+    bot_logger.info(f"/SING_UP - Starting sign up for User ID({user_id})")
+
+    # Comprobamos si el usuario ya esta registado
+    bot_logger.info(f"/SING_UP - Checking User ID({user_id}) in database")
+    if dbu.check_user_id(user_id) == True:
+        nick = dbu.select_user_nick(user_id)
+        bot_logger.info(f"/SING_UP - User {nick}({user_id}) found, aborting sign up")
+        already_registered_msg = f"{nick}, you are already registered. To see other options select or write /help"
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=already_registered_msg)
+
+        return ConversationHandler.END
+    
+    bot_logger.info(f"/SING_UP - The User ID({user_id}) doesn't exists")
+
+    # Comienza la conversacion y te pide el nick
+    bot_logger.info(f"/SING_UP - Asking to User ID({user_id}) for a nickname")
+    await update.message.reply_text("What is your nickname?")
+
+    return RECIEVE_NICK
 
 async def check_passwd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     

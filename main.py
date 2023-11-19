@@ -15,11 +15,21 @@ TOKEN = ju.get_api_token()
 update_tracking_time_to_wait = ju.get_config_var("update_tracking_time_to_wait") # Tiempo en segundos
 initial_tracking_time_wait = timu.seconds_until_next_hour()
 
+# SIGN_UP_PASSWD HANDLER
+sign_up_handler_passwd = ConversationHandler(
+    entry_points=[CommandHandler("start", tu.sing_up_start_passwd)],
+    states={
+        tu.CHECK_PASSWD: [MessageHandler(filters.TEXT, tu.check_passwd)],
+        tu.RECIEVE_NICK: [MessageHandler(filters.TEXT, tu.recieve_nick)],
+        tu.NICK_CONFIRMATION: [MessageHandler(filters.TEXT, tu.nick_confirmation)]
+    }, 
+    fallbacks=[tu.error]
+)
+
 # SIGN_UP HANDLER
 sign_up_handler = ConversationHandler(
     entry_points=[CommandHandler("start", tu.sing_up_start)],
     states={
-        tu.CHECK_PASSWD: [MessageHandler(filters.TEXT, tu.check_passwd)],
         tu.RECIEVE_NICK: [MessageHandler(filters.TEXT, tu.recieve_nick)],
         tu.NICK_CONFIRMATION: [MessageHandler(filters.TEXT, tu.nick_confirmation)]
     }, 
@@ -71,6 +81,7 @@ if __name__ == '__main__':
     application.add_handler(tracking_list_handler)
     application.add_handler(notice_handler)
     application.add_handler(sign_up_handler)
+    #application.add_handler(sign_up_handler_passwd)
     application.add_handler(tracking_handler)
     application.add_handler(untracking_handler)
 

@@ -44,6 +44,8 @@ def check_manga_name(url: str, driver: webdriver = None):
     if web_name == "MangaDex":    
         return check_mangadex_url(url, driver)
 
+    if web_name == "MangaSee":    
+        return check_mangasee_url(url, driver)
 
 def check_manga(web_name, url, last_chapter, driver: webdriver=None):
     
@@ -65,6 +67,9 @@ def check_manga(web_name, url, last_chapter, driver: webdriver=None):
 
     if web_name == "MangaDex":    
         return check_in_mangadex(web_name, url, last_chapter, driver)
+
+    if web_name == "MangaSee":    
+        return check_in_mangasee(web_name, url, last_chapter, driver)
     
 
 # MANGA PLUS
@@ -513,7 +518,7 @@ def __mangakakalot_tv_search_new_chapters(chapters_list, last_chapter, mangakaka
     new_chapters = {}
     for chapter_entry in chapters_list:
         # Nos tenemos que fijar en la etiqueta b
-        chapter_number = chapter_entry.text # El primer caracter es un espacio, lo borramos
+        chapter_number = chapter_entry.text.strip() # El primer caracter es un espacio, lo borramos
 
         # Si encontramos el ultimo capitulo leido hemos terminado
         if last_chapter == chapter_number: 
@@ -677,6 +682,98 @@ def __mangadex_search_new_chapters(chapters_list, last_chapter, mangadex_url):
 
         # Aniadimos el nombre del nuevo capitulo y su enlace, en este caso el enlace del cap no aparece
         new_chapters[chapter] = mangadex_url
+    
+    return new_chapters
+
+# MANGASEE
+def check_mangasee_url(url: str, driver: webdriver=None):
+
+    if driver == None:
+        # Realizamos la solicitud HTTP
+        response = __http_requests_to(url)
+
+        if response == None:
+            raise Exception(f"Error getting access to the web page({url})")
+        
+        # print("La petición fue aceptada")
+        content = response.content
+    else:
+        # Obtemos la pagina web
+        driver.get(url)
+
+        # Obtiene el HTML de la página después de que se haya cargado completamente
+        content = driver.page_source
+
+    # Analiza el contenido HTML con BeautifulSoup
+    soup = BeautifulSoup(content, "html.parser")
+
+    # Encontrar el titulo del manga
+    h1_main = soup.find("h1")
+
+    # Verifica si se encontró el div principal
+    if not h1_main:
+        raise Exception("No se encontró el div principal con id 'main'.")
+    
+    manga_title = h1_main.text
+
+    # Verifica si se encontró el titulo del manga
+    if not manga_title:
+        raise Exception("No se encontró el titulo del manga")
+    
+    return manga_title
+
+
+def check_in_mangasee(web_name:str, url: str, last_chapter: str, driver: webdriver=None):
+
+    local_driver = False
+    if driver == None:
+        driver = webdriver.Chrome()
+        local_driver = True
+
+    # Obtemos la pagina web
+    driver.get(url)
+
+    # Obtiene el HTML de la página después de que se haya cargado completamente
+    html = driver.page_source
+
+    # Ahora puedes analizar el HTML con BeautifulSoup
+    soup = BeautifulSoup(html, 'html.parser')
+
+    # Buscamos por la etiqueta de tipo <div>
+    div_main = soup.find_all("div", class_="list-group top-10 bottom-5 ng-scope")
+
+    if div_main == None:
+        raise Exception("No se encontró el div principal")
+    
+    # Buscamos los capitulos por la etiqueta <a>
+    chapter_list = soup.find_all("a", class_="list-group-item ChapterLink ng-scope")
+    
+    # Buscamos los nuevos capitulos
+    mangasee_url = __get_url_domain_db(web_name) 
+    new_chapters = __mangasee_search_new_chapters(chapter_list, last_chapter, mangasee_url)
+
+    # Si se ha encontrado algun capitulo nuevo lo actualizamos en la base de datos
+    if len(new_chapters)>0:
+        dbu.update_last_chapter(url, new_chapters)
+    
+    if local_driver == True:
+        driver.quit()
+
+    return new_chapters
+def __mangasee_search_new_chapters(chapters_list, last_chapter, mangasee_url):
+    new_chapters = {}
+    for chapter_entry in chapters_list:
+        chapter_number = chapter_entry.find("span", class_="ng-binding").text.strip() # strip elimina los caracteres especiales al principio y al final
+        chapter_number = chapter_number.replace('\n', ' ').replace('\t', '') # Elimina los caracteres especiales dentro de la cadena. Entre la palabra 'Chapter' y el numero del cap '1'. Se escribe un \n y multiples \t
+
+        # Si encontramos el ultimo capitulo leido hemos terminado
+        if last_chapter == chapter_number: 
+            break
+
+        # Aniadimos el nombre del nuevo capitulo y su enlace
+        chapter_id = chapter_entry['href'] # Obtenemos la referencia al capitulo
+        chapter_id = chapter_id[1:] # Eliminamos el primer caracter del id, que corresponde a la '/'
+        new_chapters[chapter_number] = mangasee_url+chapter_id
     
     return new_chapters
 

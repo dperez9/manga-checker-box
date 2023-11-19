@@ -89,6 +89,12 @@ url = "https://mangadex.org/"
 url_check = "https://mangadex.org/title/"
 cursor.execute(query, (web_name, url, url_check))
 
+# MangaSee
+web_name = "MangaSee"
+url = "https://mangasee123.com/"
+url_check = "https://mangasee123.com/manga/"
+cursor.execute(query, (web_name, url, url_check))
+
 conn.commit()
 conn.close()
 

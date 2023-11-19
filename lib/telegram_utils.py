@@ -76,7 +76,8 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def unrecognized_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     user_nick = dbu.select_user_nick(user_id)
-    bot_logger.info(f"{user_nick} ID({user_id}) - /UNRECOGNIZED_COMMAMD - User sent an unrecognized message")
+    user_input = update.message.text
+    bot_logger.info(f"{user_nick} ID({user_id}) - /UNRECOGNIZED_COMMAMD - User sent an unrecognized message: {user_input}")
     await update.message.reply_text("Select or write /help to know what to do")
 
 async def tracking_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -262,7 +263,7 @@ async def tracking_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     # Le mostramos un mensaje el cual estipule que webs estan disponibles, despues
     # Le pedimos al usuario que nos facilite una URl a la cual hacerle seguimiento
-    advise_msg = "This is the list of available web pages:\n\n"
+    advise_msg = "List of available web pages:\n\n"
     advise_msg = advise_msg + __generate_available_webs_msg()
     advise_msg = advise_msg + "\nIntroduce a URL to track from one of this pages. It can take a few seconds to analyze the web site"
     await update.message.reply_text(advise_msg, parse_mode='Markdown')
@@ -477,7 +478,7 @@ async def untracking_confirmation(update: Update, context: ContextTypes.DEFAULT_
             bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - The series '{manga_name} - {manga_web}' was removed form MANGA table")
         
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - Sending final message")
-        await update.message.reply_text(f"{manga_name} - {manga_web} was removed. To untracking another one, select or write /. Other wise select or write /help to get avaliable commands")    
+        await update.message.reply_text(f"{manga_name} - {manga_web} was removed. To untracking another one, select or write /untracking . Other wise select or write /help to get avaliable commands")    
         return ConversationHandler.END
         
     elif user_input == __no:

@@ -1,4 +1,5 @@
 import json
+from selenium import webdriver
 
 config_path = "json/config.json"
 record_path = "json/records.json"
@@ -69,3 +70,23 @@ def get_admin_id():
         output = file.readline()
 
     return output 
+
+def load_webdriver()->webdriver:
+    webdriver_browser = get_config_var("webdriver_browser")
+    webdriver_browser_lower = webdriver_browser.lower()
+
+    if webdriver_browser_lower == "chrome":
+        driver = webdriver.Chrome()
+    elif webdriver_browser_lower == "chromiumedge":
+        driver = webdriver.ChromiumEdge()
+    elif webdriver_browser_lower == "firefox":
+        driver = webdriver.Firefox()
+    elif webdriver_browser_lower == "edge":
+        driver = webdriver.Edge()
+    elif webdriver_browser_lower == "safari":
+        driver = webdriver.Safari()
+    else:
+        print(f"[INFO] Load_webdriver() - Error loading a valid web browser, {webdriver_browser} wasn't found. Loading Chrome instead. List of avaliable browsers: Chrome, ChromiumEdge, Firefox, Edge and Safari")
+        driver = webdriver.Chrome()
+
+    return driver

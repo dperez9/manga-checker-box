@@ -760,6 +760,7 @@ def check_in_mangasee(web_name:str, url: str, last_chapter: str, driver: webdriv
         driver.quit()
 
     return new_chapters
+
 def __mangasee_search_new_chapters(chapters_list, last_chapter, mangasee_url):
     new_chapters = {}
     for chapter_entry in chapters_list:

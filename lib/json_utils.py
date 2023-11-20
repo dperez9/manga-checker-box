@@ -86,7 +86,7 @@ def load_webdriver()->webdriver:
     elif webdriver_browser_lower == "safari":
         driver = webdriver.Safari()
     else:
-        print(f"[INFO] Load_webdriver() - Error loading a valid web browser, {webdriver_browser} wasn't found. Loading Chrome instead. List of avaliable browsers: Chrome, ChromiumEdge, Firefox, Edge and Safari")
+        print(f"[ERROR] Load_webdriver() - Error loading a valid web browser, {webdriver_browser} wasn't found. Loading Chrome instead. List of avaliable browsers: Chrome, ChromiumEdge, Firefox, Edge and Safari")
         driver = webdriver.Chrome()
 
     return driver

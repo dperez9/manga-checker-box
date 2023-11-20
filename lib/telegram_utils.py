@@ -277,7 +277,8 @@ async def tracking_check_url(update: Update, context: ContextTypes.DEFAULT_TYPE)
     user_input = update.message.text
     context.user_data['url'] = user_input
     bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - URL introduced: {user_input}")
-    
+
+
     # Comprobamos si la URL es valida
     error_msg = "The introduced URL is not valid. Select /tracking to introduce a valid URL. Other wise select or write /help to get avaliable commands"
     bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Checking URL")
@@ -286,7 +287,7 @@ async def tracking_check_url(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if web_name == None:
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - The introduced URL is not valid")
         await update.message.reply_text(error_msg)
-
+        
         return ConversationHandler.END
 
     bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - The introduced URL is from {web_name}")
@@ -294,13 +295,17 @@ async def tracking_check_url(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if dbu.check_already_tracking(user_id, user_input):
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - {context.user_data['nickname']} is already tracking {user_input}")
         await update.message.reply_text(f"You are tracking this series already. To add a new series, select again the /tracking command")
-
+        
         return ConversationHandler.END
     
     # Ahora buscamos el nombre del manga
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Loading web driver")
+    driver = ju.load_webdriver()
+    context.user_data['driver'] = driver
+
     manga_name = None
     try:
-        manga_name = mwu.check_manga_name(user_input)
+        manga_name = mwu.check_manga_name(user_input, driver)
     except Exception as error:
         manga_name = None
         bot_logger.warning(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - There was a problem resolving the name of the series in the URL")
@@ -309,6 +314,9 @@ async def tracking_check_url(update: Update, context: ContextTypes.DEFAULT_TYPE)
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - The introduced URL is not valid, couldn't resolve the manga name")
         await update.message.reply_text(error_msg)
 
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Closing web driver")
+        driver.quit()
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Web driver closed")
         return ConversationHandler.END
 
     # Lo guardamos en el contexto de la conversacion
@@ -327,6 +335,7 @@ async def tracking_check_url(update: Update, context: ContextTypes.DEFAULT_TYPE)
 async def tracking_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     user_id = update.message.from_user.id
+    driver = context.user_data['driver']
 
     # Ponemos todo en minusculas
     user_input = update.message.text
@@ -351,7 +360,7 @@ async def tracking_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
             # Actualizamos el ultimo capitulo del manga
             bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Tracking {manga_name} and updating last chapter registered")
             notify = False
-            await tracking(context, web_name, url, manga_name, "", notify)
+            await tracking(context, web_name, url, manga_name, "", notify, driver)
 
         # Buscamos el capitulo actualizado en la base de datos
         table = dbu.select_manga(url)
@@ -367,6 +376,9 @@ async def tracking_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
         registration_completed_msg = f"Perfect {context.user_data['nickname']}, {manga_name} last chapter is {last_chapter.strip()}. I will let you know with new chapters :P\nTo add a new series select /tracking. Other wise select or write /help to get avaliable commands"
         await update.message.reply_text(registration_completed_msg)
 
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Closing web driver")
+        driver.quit()
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Web driver closed")
         return ConversationHandler.END
     
     # Se ser un nick incorrecto, volveremos a solicitarle un nick
@@ -375,6 +387,9 @@ async def tracking_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
         dont_save_msg = "The series wasn't save. Select or write /tracking to introduce a the tracking. Other wise select or write /help to get avaliable commands"
         await update.message.reply_text(dont_save_msg)
 
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Closing web driver")
+        driver.quit()
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Web driver closed")
         return ConversationHandler.END
 
     # De ingresar un caracter diferente, volveremos a preguntarle si el nick es valido

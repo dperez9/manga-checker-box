@@ -1,4 +1,5 @@
 import time
+import datetime
 import asyncio
 import lib.database_utils as dbu
 import lib.manga_web_utils as mwu
@@ -40,11 +41,12 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "\n------------------------------" \
         "\nAdmin commands list:\n" \
         "\n/notice - Allow to send a message to all users" \
-        "\n/info - Allow to see how many users and manga are track\n" 
+        "\n/info - Allow to see how many users and manga are track" \
+        "\n/manga_updates - Allow to see today manga updates\n" 
 
     msg = msg + "\nSelect or write one command"
 
-    await update.message.reply_text(msg)
+    await context.bot.send_message(chat_id=user_id, text=msg)
 
 async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
@@ -70,7 +72,7 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"\n\nSelect or write /help to get avaliable commands"
     
     bot_logger.info(f"{user_nick} ID({user_id}) - /INFO - Sending info to admin")
-    await update.message.reply_text(msg)
+    await context.bot.send_message(chat_id=user_id, text=msg)
 
 
 async def unrecognized_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -78,7 +80,8 @@ async def unrecognized_command(update: Update, context: ContextTypes.DEFAULT_TYP
     user_nick = dbu.select_user_nick(user_id)
     user_input = update.message.text
     bot_logger.info(f"{user_nick} ID({user_id}) - /UNRECOGNIZED_COMMAMD - User sent an unrecognized message: {user_input}")
-    await update.message.reply_text("Select or write /help to know what to do")
+    msg = "Select or write /help to know what to do"
+    await context.bot.send_message(chat_id=user_id, text=msg)
 
 async def tracking_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
@@ -89,7 +92,39 @@ async def tracking_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     manga_table = dbu.select_user_manga_list(user_id)
     msg = __generate_tracking_list(manga_table)
     bot_logger.info(f"{user_nick} ID({user_id}) - /TRACKING_LIST - Sending tracking list")
-    await update.message.reply_text(msg)
+    await context.bot.send_message(chat_id=user_id, text=msg)
+
+async def manga_updates(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.message.from_user.id
+    user_nick = dbu.select_user_nick(user_id)
+
+    # Si el escribe el comando no es admin finalizamos salimos del commando
+    if str(user_id) != __admin_id:
+        bot_logger.info(f"{user_nick} ID({user_id}) - /MANGA_UPDATES - A non user admin ID({user_id}) tried to check the info")
+        return None
+
+    bot_logger.info(f"{user_nick} ID({user_id}) - /MANGA_UPDATES - Requesting manga updates")
+    logs = lu.get_manga_update_logs()
+
+    if len(logs) == 0:
+        return None
+    
+    log_msg = "" # Mensaje a enviar
+    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+    for log in logs:
+        date, time, manga_name, chapter, link = lu.parse_log_entry(log)
+        if date == current_date:
+            log_msg = log_msg + f" > {time} - {manga_name} - {chapter} - {link}\n"
+
+    msg = "Manga updates:\n\n"
+    if log_msg != "":
+        msg = msg + log_msg 
+    else:
+        msg = msg + "No manga updates so far\n"
+
+    msg = msg + f"\nSelect or write /help to get avaliable commands"
+    bot_logger.info(f"{user_nick} ID({user_id}) - /MANGA_UPDATES - Sending manga updates")
+    await context.bot.send_message(chat_id=user_id, text=msg)
 
 # JOB QUEAU ==============================================================================
 # TRACKING_ALL ---------------------------------------------------------------------------
@@ -108,6 +143,7 @@ async def update_tracking(context: ContextTypes.DEFAULT_TYPE):
     # Cerramos le navegador
     bot_logger.info(f"/TRACKING_ALL - Closing web driver")
     driver.quit()
+    bot_logger.info(f"/TRACKING_ALL - Web driver closed")
 
     # Guardamos el tiempo final
     end_time = time.time()
@@ -617,9 +653,10 @@ async def notify_users_manga(context: ContextTypes.DEFAULT_TYPE, manga_url: str,
     # Generamos un mensaje y notificamos a todos los users que sigan dicho link
     for row in table:
         user_id = row[0]
+        user_nick = dbu.select_user_nick(user_id)
         msg = __generate_message(name, new_chapters)
 
-        bot_logger.info(f"/TRACKING_ALL - User ID({user_id}) recieved a notification: {msg}")
+        bot_logger.info(f"/TRACKING_ALL - User {user_nick} ID({user_id}) recieved a notification: {msg}")
         await context.bot.send_message(chat_id=user_id, text=msg)
 
 async def notify_users_msg(context: ContextTypes.DEFAULT_TYPE, msg: str):

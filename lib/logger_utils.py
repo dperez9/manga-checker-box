@@ -31,3 +31,22 @@ __manga_change_file_handler.setFormatter(__manga_formatter)
 
 manga_logger = logging.getLogger('manga_logger')
 manga_logger.addHandler(__manga_change_file_handler)
+
+
+def get_manga_update_logs():
+    lines = []
+    with open(__manga_logs_path, 'r') as file:
+        lines = file.readlines()
+    return lines
+
+def parse_log_entry(log_entry):
+    # Dividir la cadena por los marcadores conocidos
+    date, rest = log_entry.split(' ', 1)
+    time, rest = rest.split(',', 1)
+    _ = rest.split(' - ', 1)
+    _ = rest.split('[NEW] ')[1]  # Descartar parte antes de [NEW]
+    manga_name, rest = _.split(' - ', 1)
+    chapter, rest = rest.split(' | Link: ', 1)
+    link = rest.strip()
+
+    return date, time, manga_name, chapter, link

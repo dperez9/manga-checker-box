@@ -77,7 +77,7 @@ def check_mangaplus_url(url: str, driver: webdriver=None):
     
     local_driver = False
     if driver == None:
-        driver = webdriver.Chrome()
+        driver = ju.load_webdriver()
         local_driver = True
 
     # Obtemos la pagina web
@@ -112,11 +112,14 @@ def check_in_mangaplus(web_name:str, url: str, last_chapter: str, driver: webdri
 
     local_driver = False
     if driver == None:
-        driver = webdriver.Chrome()
+        driver = ju.load_webdriver()
         local_driver = True
 
     # Obtemos la pagina web
-    driver.get(url)
+    try: 
+        driver.get(url)
+    except Exception as error:
+        raise Exception(f"Error requesting the url({url})")
 
     # Definimos los elementos a buscar
     chapter_list_class = "TitleDetail-module_main_19fsJ" # Clase que contiene la lista de mangas
@@ -536,7 +539,7 @@ def check_mangadex_url(url: str, driver: webdriver=None):
     
     local_driver = False
     if driver == None:
-        driver = webdriver.Chrome()
+        driver = ju.load_webdriver()
         local_driver = True
     
     # Obtemos la pagina web
@@ -570,11 +573,14 @@ def check_in_mangadex(web_name:str, url: str, last_chapter: str, driver: webdriv
 
     local_driver = False
     if driver == None:
-        driver = webdriver.Chrome()
+        driver = ju.load_webdriver()
         local_driver = True
 
     # Obtemos la pagina web
-    driver.get(url)
+    try: 
+        driver.get(url)
+    except Exception as error:
+        raise Exception(f"Error requesting the url({url})")
 
     # Definimos los elementos a buscar
     chapter_list_class = "flex-grow" # Clase que contiene la lista de mangas
@@ -727,11 +733,14 @@ def check_in_mangasee(web_name:str, url: str, last_chapter: str, driver: webdriv
 
     local_driver = False
     if driver == None:
-        driver = webdriver.Chrome()
+        driver = ju.load_webdriver()
         local_driver = True
 
     # Obtemos la pagina web
-    driver.get(url)
+    try: 
+        driver.get(url)
+    except Exception as error:
+        raise Exception(f"Error requesting the url({url})")
 
     # Obtiene el HTML de la página después de que se haya cargado completamente
     html = driver.page_source

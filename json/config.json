@@ -5,7 +5,7 @@
     "database_path": "db/manga_tracker.db",
     "logs_path": "logs/",
 
-    "webdriver_browser": "Chrome",
+    "webdriver_browser": "Firefox",
     "update_tracking_time_to_wait": 3600,
     "request_waiting_error_time": 4,
     "time_to_wait_between_search": 1,

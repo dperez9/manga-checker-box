@@ -20,7 +20,8 @@ cursor.execute(query)
 query = (''' CREATE TABLE IF NOT EXISTS WEBS
             (NAME     TEXT PRIMARY KEY,
             URL       TEXT NOT NULL,
-            URL_CHECK TEXT NOT NULL);
+            URL_CHECK TEXT NOT NULL, 
+            JAVASCRIPT NUMERIC NOT NULL);
          ''')
 
 cursor.execute(query)
@@ -51,49 +52,56 @@ conn.commit()
 
 # Aniadimos las webs
 # Ejecuta la consulta de inserción
-query = "INSERT INTO WEBS (NAME, URL, URL_CHECK) VALUES (?, ?, ?)"
+query = "INSERT INTO WEBS (NAME, URL, URL_CHECK, JAVASCRIPT) VALUES (?, ?, ?, ?)"
 
 # Manga Plus
 web_name = "Manga Plus"
 url = "https://mangaplus.shueisha.co.jp/"
 url_check = "https://mangaplus.shueisha.co.jp/titles/"
-cursor.execute(query, (web_name, url, url_check))
+javascript = 1
+cursor.execute(query, (web_name, url, url_check, javascript))
 
 # TuMangaOnline
 web_name = "TuMangaOnline"
 url = "https://visortmo.com/"
 url_check = "https://visortmo.com/library/"
-cursor.execute(query, (web_name, url, url_check))
+javascript = 0
+cursor.execute(query, (web_name, url, url_check, javascript))
 
 # Bato.to
 web_name = "Bato.to"
 url = "https://bato.to/"
 url_check = "https://bato.to/series/"
-cursor.execute(query, (web_name, url, url_check))
+javascript = 0
+cursor.execute(query, (web_name, url, url_check, javascript))
 
 # Mangakakalot
 web_name = "Mangakakalot"
 url = "https://mangakakalot.com/"
 url_check = "https://mangakakalot.com/"
-cursor.execute(query, (web_name, url, url_check))
+javascript = 0
+cursor.execute(query, (web_name, url, url_check, javascript))
 
 # Mangakakalot
 web_name = "Mangakakalot.tv"
 url = "https://ww6.mangakakalot.tv/"
 url_check = "https://ww6.mangakakalot.tv/"
-cursor.execute(query, (web_name, url, url_check))
+javascript = 0
+cursor.execute(query, (web_name, url, url_check, javascript))
 
 # MangaDex
 web_name = "MangaDex"
 url = "https://mangadex.org/"
 url_check = "https://mangadex.org/title/"
-cursor.execute(query, (web_name, url, url_check))
+javascript = 1
+cursor.execute(query, (web_name, url, url_check, javascript))
 
 # MangaSee
 web_name = "MangaSee"
 url = "https://mangasee123.com/"
 url_check = "https://mangasee123.com/manga/"
-cursor.execute(query, (web_name, url, url_check))
+javascript = 1
+cursor.execute(query, (web_name, url, url_check, javascript))
 
 conn.commit()
 conn.close()

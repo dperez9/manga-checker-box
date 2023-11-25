@@ -314,6 +314,25 @@ def check_already_tracking(user_id: str, url: str):
             return True
     return False
 
+def check_is_javascript_web(web_name:str):
+    # Conectando con la base de datos
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    # Consulta para seleccionar todos los registros de la tabla WEBS
+    query = 'SELECT JAVASCRIPT FROM WEBS WHERE NAME = ?'
+    cursor.execute(query, (web_name,))
+
+    # Obtener todos los registros
+    table = cursor.fetchall()
+    conn.close()
+
+    if len(table) == 0:
+        raise Exception(f"[ERROR] The web name '{web_name}' it doesn't exist")
+    
+    output = bool(table[0][0]) # Devuelve una lista de tuplas. En la primera tupla, se encuentra el valor
+    return output
+
 
 # DELETE METHODs =================================================================================
 def delete_manga(manga_url: str):

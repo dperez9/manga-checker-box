@@ -696,6 +696,7 @@ async def tracking_all(context: ContextTypes.DEFAULT_TYPE, notify: bool, driver:
     bot_logger.info(f"/TRACKING_ALL - Starting tracking all")
 
     table = dbu.select_all_manga_table()
+    table = __sorted_by_prioraticing_mangaplus(table)
     total_manga = len(table)
 
     # Recorrer los registros y obtener los valores
@@ -841,3 +842,12 @@ def __get_untracking_selection_number(selection: str):
             # En caso de que no se pueda convertir devolvemos None
             pass
     return output
+
+def __sorted_by_prioraticing_mangaplus(manga_list):
+    sorted_manga_list = sorted(manga_list, key=__mangaplus_sorted_func)
+    return sorted_manga_list
+
+# Función de comparación personalizada
+def __mangaplus_sorted_func(manga_tuple):
+    # Coloca las tuplas con 'web_name' igual a 'Manga Plus' primero
+    return manga_tuple[3] != 'Manga Plus', manga_tuple

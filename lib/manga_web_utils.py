@@ -126,16 +126,19 @@ def check_in_mangaplus(web_name:str, url: str, last_chapter: str, driver: webdri
     chapters_class_name = "ChapterListItem-module_title_3Id89" # Clase de los capitulos
     javascript_wait_time = 10 # Tiempo de espera maximo para cargar la pagina
 
-    #Espera a que los elementos con la clase deseada estén presentes en la web
-    WebDriverWait(driver, javascript_wait_time).until(
-        EC.presence_of_element_located((By.CLASS_NAME, chapter_list_class))
-    )
-
     # Hacemos scroll hacia abajo para que carguen todos los capitulos
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
     # Esperar a que la página cargue después del desplazamiento
-    time.sleep(0.8)
+    time.sleep(0.1)
+
+    #Espera a que los elementos con la clase deseada estén presentes en la web
+    try:
+        WebDriverWait(driver, javascript_wait_time).until(
+            EC.presence_of_element_located((By.CLASS_NAME, chapter_list_class))
+        )
+    except Exception as error:
+        raise Exception(f"Error finding chapter list class. Title({url})")
 
     # Obtiene el HTML de la página después de que se haya cargado completamente
     html = driver.page_source
@@ -586,16 +589,19 @@ def check_in_mangadex(web_name:str, url: str, last_chapter: str, driver: webdriv
     chapter_list_class = "flex-grow" # Clase que contiene la lista de mangas
     javascript_wait_time = 10 # Tiempo de espera maximo para cargar la pagina
 
-    #Espera a que los elementos con la clase deseada estén presentes en la web
-    WebDriverWait(driver, javascript_wait_time).until(
-        EC.presence_of_element_located((By.CLASS_NAME, chapter_list_class))
-    )
-
     # Hacemos scroll hacia abajo para que carguen todos los capitulos
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
     # Esperar a que la página cargue después del desplazamiento
-    time.sleep(0.8)
+    time.sleep(0.1)
+
+    #Espera a que los elementos con la clase deseada estén presentes en la web
+    try:
+        WebDriverWait(driver, javascript_wait_time).until(
+            EC.presence_of_element_located((By.CLASS_NAME, chapter_list_class))
+        )
+    except Exception as error:
+        raise Exception(f"Error finding chapter list class. Title({url})")
 
     # Obtiene el HTML de la página después de que se haya cargado completamente
     html = driver.page_source
@@ -705,7 +711,10 @@ def check_mangasee_url(url: str, driver: webdriver=None):
         content = response.content
     else:
         # Obtemos la pagina web
-        driver.get(url)
+        try: 
+            driver.get(url)
+        except Exception as error:
+            raise Exception(f"Error requesting the url({url})")
 
         # Obtiene el HTML de la página después de que se haya cargado completamente
         content = driver.page_source
@@ -877,6 +886,3 @@ def __http_requests_to(url: str, attempts=3):
             time.sleep(request_waiting_error_time)
     
     return answer
-
-
-        

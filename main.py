@@ -107,8 +107,8 @@ if __name__ == '__main__':
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, tu.unrecognized_command))
 
     # Jobs
-    #application.job_queue.run_repeating(tu.update_tracking, interval=update_tracking_time_to_wait, first=5)
-    application.job_queue.run_repeating(tu.update_tracking, interval=update_tracking_time_to_wait, first=initial_tracking_time_wait)
+    application.job_queue.run_repeating(tu.update_tracking, interval=update_tracking_time_to_wait, first=5)
+    #application.job_queue.run_repeating(tu.update_tracking, interval=update_tracking_time_to_wait, first=initial_tracking_time_wait)
     application.run_polling()
 
     

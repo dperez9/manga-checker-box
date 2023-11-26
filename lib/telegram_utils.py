@@ -92,7 +92,7 @@ async def tracking_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     manga_table = dbu.select_user_manga_list(user_id)
     msg = __generate_tracking_list(manga_table)
     bot_logger.info(f"{user_nick} ID({user_id}) - /TRACKING_LIST - Sending tracking list")
-    await context.bot.send_message(chat_id=user_id, text=msg)
+    await context.bot.send_message(chat_id=user_id, text=msg, parse_mode='Markdown')
 
 async def manga_updates(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
@@ -136,7 +136,7 @@ async def update_tracking(context: ContextTypes.DEFAULT_TYPE):
 
     # Creamos un webdriver para las paginas que lo necesiten
     bot_logger.info(f"/TRACKING_ALL - Loading web driver")
-    driver = webdriver.Chrome()
+    driver = ju.load_webdriver()
 
     await tracking_all(context, notify, driver)
 
@@ -153,7 +153,7 @@ async def update_tracking(context: ContextTypes.DEFAULT_TYPE):
     bot_logger.info(f"/TRACKING_ALL - It took {minutes:.0f}:{seconds:.0f} (min:sec)")
     
     ju.save_record("record_update_time_of_the_manga_list", record_update_time_of_the_manga_list)
-    bot_logger.info(f"/TRACKING_ALL - Time update record saved")
+    bot_logger.info(f"/TRACKING_ALL - Update time record saved")
     
 
 # CONVERSATION HANDLER ===================================================================
@@ -469,7 +469,7 @@ async def untracking_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     
     bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - Generating untracking list message")
     untracking_list_msg = __generate_untracking_list_msg(manga_table)
-    await update.message.reply_text(untracking_list_msg)
+    await update.message.reply_text(untracking_list_msg, parse_mode='Markdown')
 
     return UNTRACKING_ASK_CONFIRMATION
 
@@ -614,8 +614,82 @@ async def notice_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
             f"Are you sure you want to send this message?", reply_markup=reply_markup
         )
         return NOTICE_CONFIRMATION
+    
+# END HANDLER ------------------------------------------------------------------------ 
+END_CONFIRMATION = range(1) # Le asingamos un numero a cada estado
+
+async def end_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+
+    user_id = update.message.from_user.id
+    context.user_data['nickname'] = dbu.select_user_nick(user_id)
+    
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /END - User asking to erase his account")
+
+    msg = "Your tracking series and your nickname would be deleted. Are you sure?"
+    reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)    
+    await update.message.reply_text(msg, reply_markup=reply_markup)
+
+    return END_CONFIRMATION
+
+async def end_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    
+    user_id = update.message.from_user.id
+    user_input = update.message.text
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /END - User input was: {user_input}")
+
+    if user_input == __yes:
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /END - Erasing all tracking series")
+        delete_user(user_id, context.user_data['nickname'])
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /END - Erasing process completed")
+        await context.bot.send_message(f"Your profile was deleted successfully. To use again the bot select or write /start")
+        return ConversationHandler.END
+    
+    elif user_input == __no:
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /END - The operation was aborted")
+        await context.bot.send_message("The operation was aborted. Select or write /help to get avaliable commands")
+        return ConversationHandler.END
+    
+    else:
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /END - Asking for confirmation again")
+
+        reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
+        msg = "Your tracking series and your nickname would be deleted. Are you sure?"
+        await update.message.reply_text(text=msg, reply_markup=reply_markup)
+        return END_CONFIRMATION
 
 # METHODS ================================================================================
+
+async def delete_user(user_id: str, user_nick: str):
+    bot_logger.info(f"{user_nick} ID({user_id}) - /END - Selecting user trackings")
+    user_tracking_table = dbu.select_user_tracking_list(user_id)
+
+    # Borramos todos sus trackings
+    for row in user_tracking_table:
+        manga_url = row[1]
+        await delete_user_tracking(user_id, manga_url, user_nick=user_nick, command="/END")
+    
+    bot_logger.info(f"{user_nick} ID({user_id}) - /END - Deleting USERS entrance")
+    dbu.delete_user(user_id)
+    bot_logger.info(f"{user_nick} ID({user_id}) - /END - USERS entrance deleted")
+    
+async def delete_user_tracking(user_id: str, manga_url: str, user_nick: str="", command: str="DEFAULT"):
+
+    manga_row = dbu.select_manga(manga_url)
+    manga_name = manga_row[1]
+    manga_web = manga_row[3]
+
+    bot_logger.info(f"{user_nick} ID({user_id}) - {command} - Removing tracking for {manga_name}")
+    dbu.delete_tracking_row(user_id, manga_url)
+    bot_logger.info(f"{user_nick} ID({user_id}) - {command} - Removed tracking for {manga_name}")
+
+    # Comprobamos que haya alguna mas gente siguiendo dicho manga, en caso contrario lo eliminamos de la tabla MANGA
+    users_table = dbu.select_users_tracking_manga(manga_url)
+    bot_logger.info(f"{user_nick} ID({user_id}) - {command} - The series '{manga_name} - {manga_web}' is follow by {len(users_table)} users")
+    if len(users_table) == 0:
+        bot_logger.info(f"{user_nick} ID({user_id}) - {command} - It is necesary remove it form MANGA table")
+        dbu.delete_manga(manga_url)
+        bot_logger.info(f"{user_nick} ID({user_id}) - {command} - The series '{manga_name} - {manga_web}' was removed form MANGA table")
+    
 
 async def tracking_all(context: ContextTypes.DEFAULT_TYPE, notify: bool, driver: webdriver=None):
     
@@ -725,9 +799,12 @@ def __generate_tracking_list(manga_table: list):
 
     output = f"Your tracking list - Series {len(manga_table)}:\n\n"
     for row in manga_table:
+        url = row[0]
         name = row[1]
         web_name = row[3]
-        output = output + f" > {name} - {web_name}\n"
+        #web_url = dbu.select_url_with_web_name(web_name)
+        #output = output + f" > [{name}]({url}) - [{web_name}]({web_url})\n"
+        output = output + f" > [{name}]({url}) - {web_name}\n"
 
     output = output + "\nSelect or write /help to get the command list"
     return output
@@ -737,9 +814,12 @@ def __generate_untracking_list_msg(manga_table: list):
     output = "Select a series to untrack (press the number attach to the series):\n\n"
     i = 0
     for row in manga_table:
+        url = row[0]
         name = row[1]
         web_name = row[3]
-        output = output + f"/{i+1} > {name} - {web_name}\n"
+        #web_url = dbu.select_url_with_web_name(web_name)
+        #output = output + f"/{i+1} > [{name}]({url}) - [{web_name}]({web_url})\n"
+        output = output + f"/{i+1} > [{name}]({url}) - {web_name}\n"
         i = i+1 
 
     output = output + f"\nPress /cancel to abort the operation"

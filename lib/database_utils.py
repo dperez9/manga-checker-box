@@ -140,6 +140,24 @@ def select_user_manga_list(user_id: str):
 
     return table
 
+def select_user_tracking_list(user_id:str):
+    # Conectamos con la base de datos
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    # Consulta para seleccionar USER_ID y NAME en función de MANGA_URL
+    query = '''
+        SELECT MANGA_URL
+        FROM TRACKING
+        WHERE TRACKING.USER_ID = ?
+    '''
+    cursor.execute(query, (user_id,))
+
+    table = cursor.fetchall()
+
+    # Cerrar la conexión con la base de datos
+    conn.close()
+    return table
 
 def select_available_webs():
     # Conectamos con la base de datos
@@ -214,6 +232,30 @@ def select_users_tracking_manga(manga_url: str):
     conn.close()
 
     return table
+
+def select_url_with_web_name(web_name: str):
+    # Conectamos con la base de datos
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    # Consulta para seleccionar USER_ID y NAME en función de MANGA_URL
+    query = '''
+        SELECT URL
+        FROM WEBS
+        WHERE NAME = ?
+        '''
+    cursor.execute(query, (web_name,))
+
+    table = cursor.fetchall()
+
+    # Cerrar la conexión con la base de datos
+    conn.close()
+
+    output = None
+    if len(table) != 0:
+        output = table[0][0]
+
+    return output
 
 # UPDATE METHODs =================================================================================
 
@@ -335,6 +377,22 @@ def check_is_javascript_web(web_name:str):
 
 
 # DELETE METHODs =================================================================================
+def delete_user(user_id):
+    # Conectamos con la base de datos
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    # Consulta para seleccionar USER_ID y NAME en función de MANGA_URL
+    query = 'DELETE FROM USERS WHERE ID = ?'
+    cursor.execute(query, (user_id,))
+
+    #table = cursor.fetchall()
+
+    # Confirmar los cambios y cerrar la conexión con la base de datos
+    conn.commit()
+    conn.close()
+
+
 def delete_manga(manga_url: str):
 
     # Conectamos con la base de datos
@@ -345,7 +403,7 @@ def delete_manga(manga_url: str):
     query = 'DELETE FROM MANGA WHERE URL = ?'
     cursor.execute(query, (manga_url,))
 
-    table = cursor.fetchall()
+    #table = cursor.fetchall()
 
     # Confirmar los cambios y cerrar la conexión con la base de datos
     conn.commit()

@@ -56,6 +56,17 @@ untracking_handler = ConversationHandler(
     fallbacks=[tu.error]
 )
 
+# END HANDLER
+end_handler = ConversationHandler(
+    entry_points=[CommandHandler("end", tu.end_start)],
+    states={
+        tu.END_CONFIRMATION: [MessageHandler(filters.TEXT, tu.end_confirmation)]
+    }, 
+    fallbacks=[tu.error]
+)
+
+
+
 # NOTICE HANDLER
 notice_handler = ConversationHandler(
     entry_points=[CommandHandler("notice", tu.notice_start)],
@@ -74,18 +85,23 @@ if __name__ == '__main__':
     help_handler = CommandHandler('help', tu.help)
     info_handler = CommandHandler('info', tu.info)
     manga_updates_handler = CommandHandler('manga_updates', tu.manga_updates)
+    #tracking_all_handler = CommandHandler('tracking_all', tu.update_tracking)
     tracking_list_handler = CommandHandler('tracking_list', tu.tracking_list)
 
     # Complex Commands - CommandHandlers
-    application.add_handler(help_handler)
-    application.add_handler(info_handler)
-    application.add_handler(manga_updates_handler)
-    application.add_handler(tracking_list_handler)
-    application.add_handler(notice_handler)
     application.add_handler(sign_up_handler)
     #application.add_handler(sign_up_handler_passwd)
+    application.add_handler(help_handler)
     application.add_handler(tracking_handler)
     application.add_handler(untracking_handler)
+    application.add_handler(end_handler)
+    application.add_handler(notice_handler)
+    application.add_handler(info_handler)
+    application.add_handler(manga_updates_handler)
+
+    #application.add_handler(tracking_all_handler)
+    application.add_handler(tracking_list_handler)
+    
 
     # Reply to no Commands
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, tu.unrecognized_command))

@@ -18,8 +18,47 @@ manga_logger = lu.manga_logger
 __manga_checker_box_passwd = ju.get_sign_up_passwd()
 __admin_id = ju.get_admin_id()
 __time_to_wait_between_search = ju.get_config_var("time_to_wait_between_search") # Segundos
+
+# Teclados de Respuesta vars
 __yes = "Yes" # Option message 
 __no = "No" # Option message
+__help = "/help"
+__tracking = "/tracking"
+__multi_tracking = "/multi_tracking"
+__tracking_list = "/tracking_list"
+__untracking = "/untracking"
+__end = "/end"
+__notice = "/notice"
+__info = "/info"
+__manga_updates = "/manga_updates"
+__update_tracking = "/update_tracking"
+
+# Teclados
+reply_markup_yn = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True) # Para preguntas si o no
+
+button_list = [ # Configurar botones en formato vertical
+    [__help],
+    [__tracking],
+    [__multi_tracking],
+    [__tracking_list],
+    [__untracking],
+    [__end]
+]
+reply_markup_menu = ReplyKeyboardMarkup(button_list, one_time_keyboard=True)
+
+admin_button_list = [ # Configurar botones en formato vertical
+    [__help],
+    [__tracking],
+    [__multi_tracking],
+    [__tracking_list],
+    [__untracking],
+    [__end],
+    [__notice],
+    [__info],
+    [__manga_updates],
+    [__update_tracking]
+]
+reply_markup_admin_menu = ReplyKeyboardMarkup(admin_button_list, one_time_keyboard=True)
 
 # COMMADNS ==============================================================================
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -48,14 +87,18 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     msg = msg + "\nSelect or write one command"
 
-    await context.bot.send_message(chat_id=user_id, text=msg)
+    if str(user_id) == __admin_id:
+        await context.bot.send_message(chat_id=user_id, text=msg, reply_markup=reply_markup_admin_menu)
+    else:
+        await context.bot.send_message(chat_id=user_id, text=msg, reply_markup=reply_markup_menu)
+    
 
 async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_id = update.message.from_user.id
     user_nick = dbu.select_user_nick(user_id)
 
-    # Si el escribe el comando no es admin finalizamos salimos del commando
+    # Si el escribe el comando alguien que no es admin finalizamos salimos del commando
     if str(user_id) != __admin_id:
         bot_logger.info(f"{user_nick} ID({user_id}) - /INFO - A non user admin ID({user_id}) tried to check the info")
         return None
@@ -74,7 +117,7 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"\n\nSelect or write /help to get avaliable commands"
     
     bot_logger.info(f"{user_nick} ID({user_id}) - /INFO - Sending info to admin")
-    await context.bot.send_message(chat_id=user_id, text=msg)
+    await context.bot.send_message(chat_id=user_id, text=msg, reply_markup=reply_markup_admin_menu)
 
 
 async def unrecognized_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -97,9 +140,10 @@ async def tracking_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=user_id, text=msg, parse_mode='Markdown')
 
 async def manga_updates(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
     user_id = update.message.from_user.id
     user_nick = dbu.select_user_nick(user_id)
-
+    
     # Si el escribe el comando no es admin finalizamos salimos del commando
     if str(user_id) != __admin_id:
         bot_logger.info(f"{user_nick} ID({user_id}) - /MANGA_UPDATES - A non user admin ID({user_id}) tried to check the info")
@@ -124,16 +168,21 @@ async def manga_updates(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     msg = msg + f"Select or write /help to get avaliable commands"
     bot_logger.info(f"{user_nick} ID({user_id}) - /MANGA_UPDATES - Sending manga updates")
-    await context.bot.send_message(chat_id=user_id, text=msg)
+    await context.bot.send_message(chat_id=user_id, text=msg, reply_markup=reply_markup_admin_menu)
 
 # JOB QUEAU ==============================================================================
 # TRACKING_ALL ---------------------------------------------------------------------------
 async def update_tracking_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
+    
+    if str(user_id) != __admin_id:
+        bot_logger.info(f"/UPDATE_TRACKING - A non user admin ID({user_id}) tried to start a tracking update", reply_markup=reply_markup_admin_menu)
+        return ConversationHandler.END
+    
     bot_logger.info(f"/UPDATE_TRACKING - Admin started tracking all")
     await update_tracking(context)
     bot_logger.info(f"/UPDATE_TRACKING - Tracking update completed!")
-    await context.bot.send_message(chat_id=user_id, text=f"Tracking update completed!")
+    await context.bot.send_message(chat_id=user_id, text=f"Tracking update completed!", reply_markup=reply_markup_admin_menu)
 
 async def update_tracking(context: ContextTypes.DEFAULT_TYPE):
     notify = True 
@@ -179,7 +228,7 @@ async def sing_up_start_passwd(update: Update, context: ContextTypes.DEFAULT_TYP
         nick = dbu.select_user_nick(user_id)
         bot_logger.info(f"/SING_UP - User {nick}({user_id}) found, aborting sign up")
         already_registered_msg = f"{nick}, you are already registered. To see other options select or write /help"
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=already_registered_msg)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=already_registered_msg, reply_markup=reply_markup_menu)
 
         return ConversationHandler.END
     
@@ -203,7 +252,7 @@ async def sing_up_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         nick = dbu.select_user_nick(user_id)
         bot_logger.info(f"/SING_UP - User {nick}({user_id}) found, aborting sign up")
         already_registered_msg = f"{nick}, you are already registered. To see other options select or write /help"
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=already_registered_msg)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=already_registered_msg, reply_markup=reply_markup_menu)
 
         return ConversationHandler.END
     
@@ -227,7 +276,7 @@ async def check_passwd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     if user_input != __manga_checker_box_passwd:
         bot_logger.info(f"/SING_UP - The user ID({user_id}) send a wrong password")
         wrong_password_msg = "Wrong password, canceled sign up. To try again write again the /start command"
-        await update.message.reply_text(wrong_password_msg)
+        await update.message.reply_text(wrong_password_msg, reply_markup=reply_markup_menu)
 
         return ConversationHandler.END
     else:
@@ -246,9 +295,9 @@ async def recieve_nick(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     
     # Creamos las posibles respuestas a la pregunta
     bot_logger.info(f"/SING_UP - Asking to User ID({user_id}) for nickname confirmation")
-    reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
+    
     await update.message.reply_text(
-        f"The nickname '{context.user_data['nickname']}' is right?", reply_markup=reply_markup
+        f"The nickname '{context.user_data['nickname']}' is right?", reply_markup=reply_markup_yn
     )
     return NICK_CONFIRMATION
 
@@ -270,7 +319,7 @@ async def nick_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         # Le enviamos un mensaje de confirmacion
         bot_logger.info(f"/SING_UP - Registration completed for {nick} ID({user_id})")
         registration_completed_msg = f"Perfect {context.user_data['nickname']}, registration completed!\nSelect /help to see avaliable commands"
-        await update.message.reply_text(registration_completed_msg)
+        await update.message.reply_text(registration_completed_msg, reply_markup=reply_markup_menu)
 
         return ConversationHandler.END
     
@@ -288,9 +337,8 @@ async def nick_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
         # Creamos las posibles respuestas a la pregunta
         bot_logger.info(f"/SING_UP - Asking to User ID({user_id}) for nickname confirmation")
-        reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
         await update.message.reply_text(
-            f"The nickname '{context.user_data['nickname']}' is right?", reply_markup=reply_markup
+            f"The nickname '{context.user_data['nickname']}' is right?", reply_markup=reply_markup_yn
         )
 
         return NICK_CONFIRMATION
@@ -328,7 +376,7 @@ async def tracking_check_url(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if web_name == None:
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - The introduced URL({user_input}) is not valid")
         error_msg = "The introduced URL is not valid. Select /tracking to introduce a valid URL. Other wise select or write /help to get avaliable commands"
-        await context.bot.send_message(chat_id=user_id, text=error_msg)
+        await context.bot.send_message(chat_id=user_id, text=error_msg, reply_markup=reply_markup_menu)
         
         return ConversationHandler.END
 
@@ -336,7 +384,7 @@ async def tracking_check_url(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     if dbu.check_already_tracking(user_id, user_input):
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - {context.user_data['nickname']} is already tracking {user_input}")
-        await context.bot.send_message(chat_id=user_id, text=f"You are tracking this series already. To add a new series, select again the /tracking command")
+        await context.bot.send_message(chat_id=user_id, text=f"You are tracking this series already. To add a new series, select again the /tracking command", reply_markup=reply_markup_menu)
         
         return ConversationHandler.END
 
@@ -357,7 +405,7 @@ async def tracking_check_url(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if manga_name == None:
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - The introduced URL is not valid, couldn't resolve the manga name")
         error_msg = f"The introduced URL is not valid, couldn't resolve the manga name"
-        await context.bot.send_message(chat_id=user_id, text=error_msg)
+        await context.bot.send_message(chat_id=user_id, text=error_msg, reply_markup=reply_markup_menu)
 
         if driver != None:
             bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Closing web driver")
@@ -372,9 +420,8 @@ async def tracking_check_url(update: Update, context: ContextTypes.DEFAULT_TYPE)
     
     # Creamos las posibles respuestas a la pregunta
     bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Asking for track confirmation")
-    reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
     await update.message.reply_text(
-        f"You want to add '{context.user_data['manga_name']}' to your tracking list?", reply_markup=reply_markup
+        f"You want to add '{context.user_data['manga_name']}' to your tracking list?", reply_markup=reply_markup_yn
     )
 
     return TRACKING_CONFIRMATION
@@ -421,7 +468,7 @@ async def tracking_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Sending final message to user")
         
         registration_completed_msg = f"Perfect {context.user_data['nickname']}, {manga_name} last chapter is {last_chapter.strip()}. I will let you know with new chapters :P\nTo add a new series select /tracking. Other wise select or write /help to get avaliable commands"
-        await context.bot.send_message(chat_id=user_id, text=registration_completed_msg)
+        await context.bot.send_message(chat_id=user_id, text=registration_completed_msg, reply_markup=reply_markup_menu)
 
         if driver != None:
             bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Closing web driver")
@@ -434,7 +481,7 @@ async def tracking_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
     elif user_input == __no:
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - The user didn't save the series")
         dont_save_msg = "The series wasn't save. Select or write /tracking to introduce a the tracking. Other wise select or write /help to get avaliable commands"
-        await context.bot.send_message(chat_id=user_id, text=dont_save_msg)
+        await context.bot.send_message(chat_id=user_id, text=dont_save_msg, reply_markup=reply_markup_menu)
 
         if driver != None:
             bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Closing web driver")
@@ -449,9 +496,8 @@ async def tracking_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
 
         # Creamos las posibles respuestas a la pregunta
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Asking for track confirmation")
-        reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
         await update.message.reply_text(
-            f"You want to add '{context.user_data['manga_name']}' to your tracking list?", reply_markup=reply_markup
+            f"You want to add '{context.user_data['manga_name']}' to your tracking list?", reply_markup=reply_markup_yn
         )
 
         return TRACKING_CONFIRMATION
@@ -521,7 +567,7 @@ async def multi_tracking_check_urls(update: Update, context: ContextTypes.DEFAUL
         msg = f"All URLs are wrong\n\n"
         msg = msg + msg_manga_list
         msg = msg + f"Select or write /help to get avaliable commands"
-        await context.bot.send_message(user_id=user_id, text=msg)
+        await context.bot.send_message(user_id=user_id, text=msg, reply_markup=reply_markup_menu)
         return ConversationHandler.END
     
     msg = f"Series recognized list:\n\n"
@@ -530,8 +576,7 @@ async def multi_tracking_check_urls(update: Update, context: ContextTypes.DEFAUL
 
     # Creamos las posibles respuestas a la pregunta
     bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Asking for tracking confirmation")
-    reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
-    await update.message.reply_text(msg, reply_markup=reply_markup)
+    await update.message.reply_text(msg, reply_markup=reply_markup_yn)
 
     return MULTI_TRACKING_CONFIRMATION
 
@@ -549,7 +594,7 @@ async def multi_tracking_confirmation(update: Update, context: ContextTypes.DEFA
         msg = "I will let you know with new chapters from list:\n\n"
         msg = msg + manga_msg
         msg = msg + "Select or write /multi_tracking to introduce a new list. Other wise select or write /help to get avaliable commands"
-        await context.bot.send_message(chat_id=user_id, text=msg)
+        await context.bot.send_message(chat_id=user_id, text=msg, reply_markup=reply_markup_menu)
         driver.quit()
 
         return ConversationHandler.END
@@ -558,7 +603,7 @@ async def multi_tracking_confirmation(update: Update, context: ContextTypes.DEFA
     elif user_input == __no:
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - The user didn't save the series")
         dont_save_msg = "The list wasn't save. Select or write /tracking to introduce a the tracking. Other wise select or write /help to get avaliable commands"
-        await context.bot.send_message(chat_id=user_id, text=dont_save_msg)
+        await context.bot.send_message(chat_id=user_id, text=dont_save_msg, reply_markup=reply_markup_menu)
 
         return ConversationHandler.END
 
@@ -568,8 +613,7 @@ async def multi_tracking_confirmation(update: Update, context: ContextTypes.DEFA
 
         # Creamos las posibles respuestas a la pregunta
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Asking for track confirmation")
-        reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
-        await update.message.reply_text(f"Do you want to track all?", reply_markup=reply_markup)
+        await update.message.reply_text(f"Do you want to track all?", reply_markup=reply_markup_yn)
 
         return MULTI_TRACKING_CONFIRMATION
 
@@ -587,8 +631,8 @@ async def untracking_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     if len(manga_table) == 0:
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - User is not tracking any series")
-        await context.bot.send_message(chat_id=user_id, text=f"You are not tracking any series. Select or write /help to get avaliable commands")
-        context.user_data["manga_table"] = None
+        await context.bot.send_message(chat_id=user_id, text=f"You are not tracking any series. Select or write /help to get avaliable commands", reply_markup=reply_markup_menu)
+        
         return ConversationHandler.END
     
     bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - Generating untracking list message")
@@ -606,7 +650,7 @@ async def untracking_ask_confirmation(update: Update, context: ContextTypes.DEFA
     # Comprobamos si quiere cancelar el proceso
     if user_input == "/cancel":
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - User abort the untracking process")
-        await context.bot.send_message(chat_id=user_id, text=f"Aborted untracking process. Select or write /help to get avaliable commands")
+        await context.bot.send_message(chat_id=user_id, text=f"Aborted untracking process. Select or write /help to get avaliable commands", reply_markup=reply_markup_menu)
 
         return ConversationHandler.END
     
@@ -617,7 +661,7 @@ async def untracking_ask_confirmation(update: Update, context: ContextTypes.DEFA
     # Si no se ha detectado una seleccion terminamos
     if selection_number == None:
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - It couldn't recognized a number selection. Aborted untracking process")
-        await context.bot.send_message(chat_id=user_id, text=f"I couldn't recognized a number selection. Aborted untracking process. To untrack a series select or write /untracking. Other wise select or write /help to get avaliable commands")
+        await context.bot.send_message(chat_id=user_id, text=f"I couldn't recognized a number selection. Aborted untracking process. To untrack a series select or write /untracking. Other wise select or write /help to get avaliable commands", reply_markup=reply_markup_menu)
         return ConversationHandler.END
     
     bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - The number recognized was: '{selection_number+1}'")
@@ -631,9 +675,8 @@ async def untracking_ask_confirmation(update: Update, context: ContextTypes.DEFA
     
     # Creamos las posibles respuestas a la pregunta
     bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - Asking for untracking confirmation")
-    reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
     await update.message.reply_text(
-        f"You want to remove '{context.user_data['manga_name']} - {context.user_data['manga_web']}' from your tracking list?", reply_markup=reply_markup
+        f"You want to remove '{context.user_data['manga_name']} - {context.user_data['manga_web']}' from your tracking list?", reply_markup=reply_markup_yn
     )
 
     return UNTRACKING_CONFIRMATION
@@ -661,20 +704,19 @@ async def untracking_confirmation(update: Update, context: ContextTypes.DEFAULT_
             bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - The series '{manga_name} - {manga_web}' was removed form MANGA table")
         
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - Sending final message")
-        await context.bot.send_message(chat_id=user_id, text=f"{manga_name} - {manga_web} was removed. To untracking another one, select or write /untracking . Other wise select or write /help to get avaliable commands")    
+        await context.bot.send_message(chat_id=user_id, text=f"{manga_name} - {manga_web} was removed. To untracking another one, select or write /untracking . Other wise select or write /help to get avaliable commands", reply_markup=reply_markup_menu)    
         return ConversationHandler.END
         
     elif user_input == __no:
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - User canceled untracking process")
-        await context.bot.send_message(chat_id=user_id, text=f"The series '{manga_name} - {manga_web}' wasn't remove it. To remove another series select or write /untracking. Other wise select or write /help to get avaliable commands")
+        await context.bot.send_message(chat_id=user_id, text=f"The series '{manga_name} - {manga_web}' wasn't remove it. To remove another series select or write /untracking. Other wise select or write /help to get avaliable commands", reply_markup=reply_markup_menu)
         return ConversationHandler.END
     
     else:
         # Creamos las posibles respuestas a la pregunta
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - Asking for untracking confirmation")
-        reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
         await update.message.reply_text(
-            f"You want to remove '{context.user_data['manga_name']} - {context.user_data['manga_web']}' from your tracking list?", reply_markup=reply_markup
+            f"You want to remove '{context.user_data['manga_name']} - {context.user_data['manga_web']}' from your tracking list?", reply_markup=reply_markup_yn
         )
 
         return UNTRACKING_CONFIRMATION
@@ -689,7 +731,7 @@ async def notice_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
     # Si el escribe el comando no es admin finalizamos salimos del commando
     if str(user_id) != __admin_id:
-        bot_logger.info(f"/NOTICE - A non user admin ID({user_id}) tried to send a notice")
+        bot_logger.info(f"/NOTICE - A non user admin ID({user_id}) tried to send a notice", reply_markup=reply_markup_admin_menu)
         return ConversationHandler.END
     
     bot_logger.info(f"/NOTICE - Admin user wants to notice a message")
@@ -707,9 +749,8 @@ async def notice_ask_confirmation(update: Update, context: ContextTypes.DEFAULT_
     bot_logger.info(f"/NOTICE - Admin sent the message:\n{user_input}")
     bot_logger.info(f"/NOTICE - Asking for confirmation")
 
-    reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
     await update.message.reply_text(
-        f"Are you sure you want to send this message?", reply_markup=reply_markup
+        f"Are you sure you want to send this message?", reply_markup=reply_markup_yn
     )
 
     return NOTICE_CONFIRMATION
@@ -722,20 +763,18 @@ async def notice_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     if user_input == __yes:
         bot_logger.info(f"/NOTICE - Admin accepted send the message")
         await notify_users_msg(context, context.user_data['notice_msg'])
-        await update.message.reply_text(f"All messages where sent. Select or write /help to get avaliable commands")
+        await update.message.reply_text(f"All messages where sent. Select or write /help to get avaliable commands", reply_markup=reply_markup_admin_menu)
         return ConversationHandler.END
     
     elif user_input == __no:
         bot_logger.info(f"/NOTICE - Admin discharged the message")
-        await update.message.reply_text("The message was not send. Select or write /help to get avaliable commands")
+        await update.message.reply_text("The message was not send. Select or write /help to get avaliable commands", reply_markup=reply_markup_admin_menu)
         return ConversationHandler.END
     
     else:
         bot_logger.info(f"/NOTICE - Asking for confirmation again")
-
-        reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
         await update.message.reply_text(
-            f"Are you sure you want to send this message?", reply_markup=reply_markup
+            f"Are you sure you want to send this message?", reply_markup=reply_markup_yn
         )
         return NOTICE_CONFIRMATION
     
@@ -750,8 +789,7 @@ async def end_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /END - User asking to erase his account")
 
     msg = "Your tracking series and your nickname would be deleted. Are you sure?"
-    reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)    
-    await update.message.reply_text(msg, reply_markup=reply_markup)
+    await update.message.reply_text(msg, reply_markup=reply_markup_yn)
 
     return END_CONFIRMATION
 
@@ -770,15 +808,14 @@ async def end_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     
     elif user_input == __no:
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /END - The operation was aborted")
-        await context.bot.send_message(chat_id=user_id, text="The operation was aborted. Select or write /help to get avaliable commands")
+        await context.bot.send_message(chat_id=user_id, text="The operation was aborted. Select or write /help to get avaliable commands", reply_markup=reply_markup_menu)
         return ConversationHandler.END
     
     else:
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /END - Asking for confirmation again")
 
-        reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
         msg = "Your tracking series and your nickname would be deleted. Are you sure?"
-        await update.message.reply_text(text=msg, reply_markup=reply_markup)
+        await update.message.reply_text(text=msg, reply_markup=reply_markup_yn)
         return END_CONFIRMATION
 
 # METHODS ================================================================================
@@ -883,7 +920,7 @@ async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     bot_logger.info(f"User ID({user_id}) canceled the conversation")
     await update.message.reply_text(
-        f"Bye! I hope we can talk again some day.", reply_markup=ReplyKeyboardRemove()
+        f"Error", reply_markup=ReplyKeyboardRemove()
     )
 
     return ConversationHandler.END

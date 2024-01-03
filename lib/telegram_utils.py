@@ -32,17 +32,19 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/start - Starts the bot\n" \
         "/help - Shows you avaliable commands\n" \
         "/tracking - Add a new series to your tracking list\n" \
+        "/multi_tracking - Add multiple new series at once\n" \
         "/tracking_list - Show your tracking list\n" \
-        "/untracking  - Remove a series of your tracking list\n"
+        "/untracking  - Remove a series of your tracking list\n" \
+        "/end - Delete your account\n"
         
     if str(user_id) == __admin_id:
-        print("hola")
         msg = msg + \
         "\n------------------------------" \
         "\nAdmin commands list:\n" \
         "\n/notice - Allow to send a message to all users" \
         "\n/info - Allow to see how many users and manga are track" \
-        "\n/manga_updates - Allow to see today manga updates\n" 
+        "\n/manga_updates - Allow to see today manga updates" \
+        "\n/update_tracking - Search for updates in all series\n"
 
     msg = msg + "\nSelect or write one command"
 
@@ -62,8 +64,8 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_count = len(dbu.select_all_users_table())
     manga_count = len(dbu.select_all_manga_table())
-    record_update_time_of_the_manga_list = ju.load_record("record_update_time_of_the_manga_list")
-    minutes, seconds = divmod(record_update_time_of_the_manga_list, 60)
+    record_update_time_of_the_manga_info_list = ju.load_record("record_update_time_of_the_manga_info_list")
+    minutes, seconds = divmod(record_update_time_of_the_manga_info_list, 60)
 
     msg = "Bot Info:\n\n" \
         f"User count: {user_count}\n" \
@@ -105,16 +107,14 @@ async def manga_updates(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     bot_logger.info(f"{user_nick} ID({user_id}) - /MANGA_UPDATES - Requesting manga updates")
     logs = lu.get_manga_update_logs()
-
-    if len(logs) == 0:
-        return None
     
     log_msg = "" # Mensaje a enviar
     current_date = datetime.datetime.now().strftime('%Y-%m-%d')
-    for log in logs:
-        date, time, manga_name, chapter, link = lu.parse_log_entry(log)
-        if date == current_date:
-            log_msg = log_msg + f" > {time} - {manga_name} - {chapter} - {link}\n\n"
+    if len(logs) != 0:
+        for log in logs:
+            date, time, manga_name, chapter, link = lu.parse_log_entry(log)
+            if date == current_date:
+                log_msg = log_msg + f" > {time} - {manga_name} - {chapter} - {link}\n\n"
 
     msg = "Manga updates:\n\n"
     if log_msg != "":
@@ -128,6 +128,10 @@ async def manga_updates(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # JOB QUEAU ==============================================================================
 # TRACKING_ALL ---------------------------------------------------------------------------
+async def update_tracking_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    bot_logger.info(f"/UPDATE_TRACKING - Admin started tracking all")
+    await update_tracking(context)
+
 async def update_tracking(context: ContextTypes.DEFAULT_TYPE):
     notify = True 
 
@@ -148,11 +152,11 @@ async def update_tracking(context: ContextTypes.DEFAULT_TYPE):
     # Guardamos el tiempo final
     end_time = time.time()
 
-    record_update_time_of_the_manga_list = end_time - init_time # Guardamos el tiempo en segundos
-    minutes, seconds = divmod(record_update_time_of_the_manga_list, 60)
+    record_update_time_of_the_manga_info_list = end_time - init_time # Guardamos el tiempo en segundos
+    minutes, seconds = divmod(record_update_time_of_the_manga_info_list, 60)
     bot_logger.info(f"/TRACKING_ALL - It took {minutes:.0f}:{seconds:.0f} (min:sec)")
     
-    ju.save_record("record_update_time_of_the_manga_list", record_update_time_of_the_manga_list)
+    ju.save_record("record_update_time_of_the_manga_info_list", record_update_time_of_the_manga_info_list)
     bot_logger.info(f"/TRACKING_ALL - Update time record saved")
     
 
@@ -314,14 +318,13 @@ async def tracking_check_url(update: Update, context: ContextTypes.DEFAULT_TYPE)
     context.user_data['url'] = user_input
     bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - URL introduced: {user_input}")
 
-
     # Comprobamos si la URL es valida
-    error_msg = "The introduced URL is not valid. Select /tracking to introduce a valid URL. Other wise select or write /help to get avaliable commands"
     bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - Checking URL")
     web_name = mwu.check_url(user_input)
 
     if web_name == None:
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - The introduced URL({user_input}) is not valid")
+        error_msg = "The introduced URL is not valid. Select /tracking to introduce a valid URL. Other wise select or write /help to get avaliable commands"
         await context.bot.send_message(chat_id=user_id, text=error_msg)
         
         return ConversationHandler.END
@@ -350,6 +353,7 @@ async def tracking_check_url(update: Update, context: ContextTypes.DEFAULT_TYPE)
     
     if manga_name == None:
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /TRACKING - The introduced URL is not valid, couldn't resolve the manga name")
+        error_msg = f"The introduced URL is not valid, couldn't resolve the manga name"
         await context.bot.send_message(chat_id=user_id, text=error_msg)
 
         if driver != None:
@@ -449,6 +453,123 @@ async def tracking_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
 
         return TRACKING_CONFIRMATION
 
+
+# MULTI TRACKING HANDLER ------------------------------------------------------------------------
+MULTI_TRACKING_CHECK_URLS, MULTI_TRACKING_CONFIRMATION = range(2) # Le asingamos un numero a cada estado
+
+async def multi_tracking_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    
+    user_id = update.message.from_user.id
+    context.user_data["nickname"] = dbu.select_user_nick(user_id)
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Starting multi tracking process")
+
+    # Le mostramos un mensaje el cual estipule que webs estan disponibles, despues
+    # Le pedimos al usuario que nos facilite una URl a la cual hacerle seguimiento
+    advise_msg = "List of available web pages:\n\n"
+    advise_msg = advise_msg + __generate_available_webs_msg()
+    advise_msg = advise_msg + "\nIntroduce a list of URLs to track from this web pages. The URLs must be passed one per line, like this example:\n"
+    advise_msg = advise_msg + "\n_https://web_page/series1_\n_https://web_page/series2_\n_https://web_page/series3\n"
+    advise_msg = advise_msg + "\nSelect or write /cancel to abort the multi tracking"
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Sending avaliable webs")
+    await update.message.reply_text(advise_msg, parse_mode='Markdown')
+    
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Waiting for list to track")
+    
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Loading web driver")
+    context.user_data["driver"] = ju.load_webdriver()
+    
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Web driver loaded")
+
+    return MULTI_TRACKING_CHECK_URLS
+
+async def multi_tracking_check_urls(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    
+    user_id = update.message.from_user.id
+    user_input = update.message.text
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - User sent: \n{user_input}")
+    
+    url_list = __prepare_url_list(update, context, user_input)
+    
+    error_msg_n = 0 # Error message number
+    manga_info_list= [] # Guardamos la url y el nombre de cada manga. Cada entrada guarda: {error_msg, url, manga_name}
+    for url in url_list:
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Remain element in URL list: {len(url_list) - len(manga_info_list)}")
+        #bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - URL taked from list: {user_input}")
+        error_msg = ""
+        manga_name = ""
+        try:
+            manga_name = await __multi_tracking_track_name_from_url(update, context, url=url)
+        except Exception as error:
+            error_msg = str(error)
+
+        manga_info_list.append((error_msg, url, manga_name))
+    
+    # Guardamos la lista
+    context.user_data['manga_info_list'] = manga_info_list
+    msg_manga_list = "error"
+    try:
+        msg_manga_list = __prepared_recognized_manga_names(manga_info_list)
+    except Exception as error:
+        print(str(error))
+        error_msg_n = len(manga_info_list)
+
+    if error_msg_n == len(manga_info_list):
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - All URLs are wrong, notifying user")
+        msg = f"All URLs are wrong\n\n"
+        msg = msg + msg_manga_list
+        msg = msg + f"Select or write /help to get avaliable commands"
+        await context.bot.send_message(user_id=user_id, text=msg)
+        return ConversationHandler.END
+    
+    msg = f"Series recognized list:\n\n"
+    msg = msg + msg_manga_list
+    msg = msg + f"Do you want to track all?"
+
+    # Creamos las posibles respuestas a la pregunta
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Asking for tracking confirmation")
+    reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
+    await update.message.reply_text(msg, reply_markup=reply_markup)
+
+    return MULTI_TRACKING_CONFIRMATION
+
+async def multi_tracking_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    user_id = update.message.from_user.id
+    driver = context.user_data['driver']
+    
+    # Ponemos todo en minusculas
+    user_input = update.message.text
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - User answer: {user_input}")
+
+    # De ser un nick valido, registramos al usuario en la base de datos y terminamos
+    if user_input == __yes:
+        manga_msg = await __multi_tracking_track_and_msg(update, context, manga_info_list=context.user_data['manga_info_list'])
+        msg = "I will let you know with new chapters from list:\n\n"
+        msg = msg + manga_msg
+        msg = msg + "Select or write /multi_tracking to introduce a new list. Other wise select or write /help to get avaliable commands"
+        await context.bot.send_message(chat_id=user_id, text=msg)
+        driver.quit()
+
+        return ConversationHandler.END
+    
+    # Se ser un nick incorrecto, volveremos a solicitarle un nick
+    elif user_input == __no:
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - The user didn't save the series")
+        dont_save_msg = "The list wasn't save. Select or write /tracking to introduce a the tracking. Other wise select or write /help to get avaliable commands"
+        await context.bot.send_message(chat_id=user_id, text=dont_save_msg)
+
+        return ConversationHandler.END
+
+    # De ingresar un caracter diferente, volveremos a preguntarle si el nick es valido
+    else:
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - User wrote a invalid answer")
+
+        # Creamos las posibles respuestas a la pregunta
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Asking for track confirmation")
+        reply_markup = ReplyKeyboardMarkup([[__yes, __no]], one_time_keyboard=True)
+        await update.message.reply_text(f"Do you want to track all?", reply_markup=reply_markup)
+
+        return MULTI_TRACKING_CONFIRMATION
+
 # UNTRACKING HANDLER ------------------------------------------------------------------------
 UNTRACKING_ASK_CONFIRMATION, UNTRACKING_CONFIRMATION = range(2) # Le asingamos un numero a cada estado
 
@@ -483,7 +604,7 @@ async def untracking_ask_confirmation(update: Update, context: ContextTypes.DEFA
     if user_input == "/cancel":
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - User abort the untracking process")
         await context.bot.send_message(chat_id=user_id, text=f"Aborted untracking process. Select or write /help to get avaliable commands")
-        context.user_data["manga_table"] = None
+
         return ConversationHandler.END
     
     # Comprobamos que el numero enviado por el usuario es una respuesta valida. El usuario debe devolver algo como esto: '/1', '/4', '/12' 
@@ -639,14 +760,14 @@ async def end_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     if user_input == __yes:
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /END - Erasing all tracking series")
-        delete_user(user_id, context.user_data['nickname'])
+        await delete_user(user_id, context.user_data['nickname'])
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /END - Erasing process completed")
-        await context.bot.send_message(f"Your profile was deleted successfully. To use again the bot select or write /start")
+        await context.bot.send_message(chat_id=user_id, text=f"Your profile was deleted successfully. To use again the bot select or write /start")
         return ConversationHandler.END
     
     elif user_input == __no:
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /END - The operation was aborted")
-        await context.bot.send_message("The operation was aborted. Select or write /help to get avaliable commands")
+        await context.bot.send_message(chat_id=user_id, text="The operation was aborted. Select or write /help to get avaliable commands")
         return ConversationHandler.END
     
     else:
@@ -665,7 +786,7 @@ async def delete_user(user_id: str, user_nick: str):
 
     # Borramos todos sus trackings
     for row in user_tracking_table:
-        manga_url = row[1]
+        manga_url = row[0]
         await delete_user_tracking(user_id, manga_url, user_nick=user_nick, command="/END")
     
     bot_logger.info(f"{user_nick} ID({user_id}) - /END - Deleting USERS entrance")
@@ -674,9 +795,9 @@ async def delete_user(user_id: str, user_nick: str):
     
 async def delete_user_tracking(user_id: str, manga_url: str, user_nick: str="", command: str="DEFAULT"):
 
-    manga_row = dbu.select_manga(manga_url)
-    manga_name = manga_row[1]
-    manga_web = manga_row[3]
+    manga_row = dbu.select_manga(manga_url)[0]
+    manga_name = manga_row[0]
+    manga_web = manga_row[2]
 
     bot_logger.info(f"{user_nick} ID({user_id}) - {command} - Removing tracking for {manga_name}")
     dbu.delete_tracking_row(user_id, manga_url)
@@ -686,7 +807,7 @@ async def delete_user_tracking(user_id: str, manga_url: str, user_nick: str="", 
     users_table = dbu.select_users_tracking_manga(manga_url)
     bot_logger.info(f"{user_nick} ID({user_id}) - {command} - The series '{manga_name} - {manga_web}' is follow by {len(users_table)} users")
     if len(users_table) == 0:
-        bot_logger.info(f"{user_nick} ID({user_id}) - {command} - It is necesary remove it form MANGA table")
+        bot_logger.info(f"{user_nick} ID({user_id}) - {command} - It is necesary remove it from MANGA table")
         dbu.delete_manga(manga_url)
         bot_logger.info(f"{user_nick} ID({user_id}) - {command} - The series '{manga_name} - {manga_web}' was removed form MANGA table")
     
@@ -843,11 +964,133 @@ def __get_untracking_selection_number(selection: str):
             pass
     return output
 
-def __sorted_by_prioraticing_mangaplus(manga_list):
-    sorted_manga_list = sorted(manga_list, key=__mangaplus_sorted_func)
-    return sorted_manga_list
+def __sorted_by_prioraticing_mangaplus(manga_info_list):
+    sorted_manga_info_list = sorted(manga_info_list, key=__mangaplus_sorted_func)
+    return sorted_manga_info_list
 
 # Función de comparación personalizada
 def __mangaplus_sorted_func(manga_tuple):
     # Coloca las tuplas con 'web_name' igual a 'Manga Plus' primero
     return manga_tuple[3] != 'Manga Plus', manga_tuple
+
+# MULTI_TRACKING_AUX_METHODS
+def __prepare_url_list(update: Update, context: ContextTypes.DEFAULT_TYPE, user_input: str):
+    user_id = update.message.from_user.id
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Preparing URL list, dividing user input by lines")
+    url_list = user_input.splitlines()
+
+    return url_list
+
+def __prepared_recognized_manga_names(manga_info_list: list):
+    msg = ""
+    for manga in manga_info_list:
+        error_msg = manga[0]
+        url = manga[1]
+        manga_name = manga[2]
+        if error_msg != "":
+            msg = msg + f" > {error_msg}\n\n"
+        else:
+            msg = msg + f" > {manga_name}\n\n"
+
+    return msg
+
+async def __multi_tracking_track_name_from_url(update: Update, context: ContextTypes.DEFAULT_TYPE, url: str):
+    user_id = update.message.from_user.id
+    driver = context.user_data['driver']
+    user_input = url
+
+    # Comprobamos si la URL es valida
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Checking URL ({user_input})")
+    web_name = mwu.check_url(user_input)
+
+    if web_name == None:
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - The introduced URL({user_input}) is not valid")
+        error_msg = f"The introduced URL ({user_input}) is not valid"
+        raise Exception(error_msg)
+        
+
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - The introduced URL is from {web_name}")
+
+    if dbu.check_already_tracking(user_id, user_input):
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - {context.user_data['nickname']} is already tracking {user_input}")
+        error_msg = "You are tracking this series already"
+        raise Exception(error_msg)
+
+    manga_name = None
+    try:
+        manga_name = mwu.check_manga_name(user_input, driver)
+    except Exception as error:
+        manga_name = None
+        bot_logger.warning(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - There was a problem resolving the name of the series in the URL")
+    
+    if manga_name == None:
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - The introduced URL is not valid, couldn't resolve the manga name")
+        error_msg = f"The introduced URL is not valid, couldn't resolve the manga name"
+        raise Exception(error_msg)
+
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - The name of the series is: {manga_name}")
+
+    return manga_name
+
+async def __multi_tracking_track_manga_from_url(update: Update, context: ContextTypes.DEFAULT_TYPE, url: str, manga_name: str):
+    # Comprobamos si el manga se encuentra en la lista de mangas
+    user_id = update.message.from_user.id
+    driver = context.user_data['driver']
+    last_chapter = ""
+    tracking_success = True
+    tracking_error_msg = ""
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Checking if manga is already in database")
+    check = dbu.check_manga_url(url)
+
+    if not check:
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - It not registered, creating an entry in database for {manga_name}")
+        # Cremos una entrada en la base de datos para dicha serie
+        web_name = dbu.select_web_name_from_manga_url(url)
+        dbu.insert_manga(url, manga_name, "", web_name)
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Entry created")
+
+        # Actualizamos el ultimo capitulo del manga
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Tracking {manga_name} and updating last chapter registered")
+        notify = False
+        tracking_success = await tracking(context, web_name, url, manga_name, "", notify, driver)
+        
+    if not tracking_success:
+        tracking_error_msg = f" Error searching last chapter"
+
+    
+    # Buscamos el capitulo actualizado en la base de datos
+    table = dbu.select_manga(url)
+    last_chapter = table[0][1] # Fila 0 de la tabla (la unica que hay), posicion 1
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - {manga_name} last chapter is {last_chapter.strip()}")
+
+    # Introducimos en la tabla tracking la informacion
+    dbu.insert_tracking(user_id, url)
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Added to Tracking table the track: {context.user_data['nickname']} - {manga_name}")
+    
+    # Devolvemos la informacion recogida
+    manga_info = (tracking_error_msg, url, manga_name, last_chapter)
+    return manga_info
+
+async def __multi_tracking_track_and_msg(update: Update, context: ContextTypes.DEFAULT_TYPE, manga_info_list: list):
+    msg = ""
+
+    for manga in manga_info_list:
+        manga_error = manga[0]
+        manga_url = manga[1]
+        manga_name = manga[2]
+
+        # Si hubo un mensaje de error saltamos a la siguiente iteracion
+        if manga_error != "":
+            continue
+        
+        # Hacemos tracking del manga
+        tracking_error_msg, url, name, last_chapter = await __multi_tracking_track_manga_from_url(update, context, url=manga_url, manga_name=manga_name)
+
+        # Si habido un mensaje de error
+        if tracking_error_msg != "":
+            msg = msg + f" > {name} - {tracking_error_msg}\n\n"
+            continue
+        
+        msg = msg + f" > {name} - {last_chapter}\n\n"
+    
+    return msg

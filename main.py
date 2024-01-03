@@ -56,6 +56,16 @@ untracking_handler = ConversationHandler(
     fallbacks=[tu.error]
 )
 
+# MULTIPLE TRACKING HANDLER
+multi_tracking_handler = ConversationHandler(
+    entry_points=[CommandHandler("multi_tracking", tu.multi_tracking_start)],
+    states={
+        tu.MULTI_TRACKING_CHECK_URLS: [MessageHandler(filters.TEXT, tu.multi_tracking_check_urls)],
+        tu.MULTI_TRACKING_CONFIRMATION: [MessageHandler(filters.TEXT, tu.multi_tracking_confirmation)]
+    }, 
+    fallbacks=[tu.error]
+)
+
 # END HANDLER
 end_handler = ConversationHandler(
     entry_points=[CommandHandler("end", tu.end_start)],
@@ -64,8 +74,6 @@ end_handler = ConversationHandler(
     }, 
     fallbacks=[tu.error]
 )
-
-
 
 # NOTICE HANDLER
 notice_handler = ConversationHandler(
@@ -85,7 +93,7 @@ if __name__ == '__main__':
     help_handler = CommandHandler('help', tu.help)
     info_handler = CommandHandler('info', tu.info)
     manga_updates_handler = CommandHandler('manga_updates', tu.manga_updates)
-    #tracking_all_handler = CommandHandler('tracking_all', tu.update_tracking)
+    update_tracking_handler = CommandHandler('update_tracking', tu.update_tracking_admin)
     tracking_list_handler = CommandHandler('tracking_list', tu.tracking_list)
 
     # Complex Commands - CommandHandlers
@@ -93,22 +101,21 @@ if __name__ == '__main__':
     #application.add_handler(sign_up_handler_passwd)
     application.add_handler(help_handler)
     application.add_handler(tracking_handler)
+    application.add_handler(multi_tracking_handler)
+    application.add_handler(tracking_list_handler)
     application.add_handler(untracking_handler)
     application.add_handler(end_handler)
     application.add_handler(notice_handler)
     application.add_handler(info_handler)
     application.add_handler(manga_updates_handler)
-
-    #application.add_handler(tracking_all_handler)
-    application.add_handler(tracking_list_handler)
-    
+    application.add_handler(update_tracking_handler)
 
     # Reply to no Commands
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, tu.unrecognized_command))
 
     # Jobs
-    application.job_queue.run_repeating(tu.update_tracking, interval=update_tracking_time_to_wait, first=5)
-    #application.job_queue.run_repeating(tu.update_tracking, interval=update_tracking_time_to_wait, first=initial_tracking_time_wait)
+    #application.job_queue.run_repeating(tu.update_tracking, interval=update_tracking_time_to_wait, first=5)
+    application.job_queue.run_repeating(tu.update_tracking, interval=update_tracking_time_to_wait, first=initial_tracking_time_wait)
     application.run_polling()
 
     

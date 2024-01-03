@@ -84,8 +84,8 @@ cursor.execute(query, (web_name, url, url_check, javascript))
 
 # Mangakakalot
 web_name = "Mangakakalot.tv"
-url = "https://ww6.mangakakalot.tv/"
-url_check = "https://ww6.mangakakalot.tv/"
+url = "https://ww7.mangakakalot.tv/"
+url_check = "https://ww7.mangakakalot.tv/"
 javascript = 0
 cursor.execute(query, (web_name, url, url_check, javascript))
 

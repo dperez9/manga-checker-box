@@ -22,6 +22,7 @@ __time_to_wait_between_search = ju.get_config_var("time_to_wait_between_search")
 # Teclados de Respuesta vars
 __yes = "Yes" # Option message 
 __no = "No" # Option message
+__cancel = "/cancel"
 __help = "/help"
 __tracking = "/tracking"
 __multi_tracking = "/multi_tracking"
@@ -637,7 +638,7 @@ async def untracking_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     
     bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /UNTRACKING - Generating untracking list message")
     untracking_list_msg = __generate_untracking_list_msg(manga_table)
-    await update.message.reply_text(untracking_list_msg, parse_mode='Markdown')
+    await update.message.reply_text(untracking_list_msg, parse_mode='Markdown', reply_markup=__generate_untracking_reply_markup_menu(len(manga_table)))
 
     return UNTRACKING_ASK_CONFIRMATION
 
@@ -1134,3 +1135,9 @@ async def __multi_tracking_track_and_msg(update: Update, context: ContextTypes.D
         msg = msg + f" > {name} - {last_chapter}\n\n"
     
     return msg
+
+def __generate_untracking_reply_markup_menu(n: int):
+    button_list = [ [__cancel] ]
+    for i in range(n):
+        button_list.append([f"/{i+1}"])
+    return ReplyKeyboardMarkup(button_list, one_time_keyboard=True)

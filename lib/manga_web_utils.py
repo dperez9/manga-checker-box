@@ -46,6 +46,9 @@ def check_manga_name(url: str, driver: webdriver = None):
 
     if web_name == "MangaSee":    
         return check_mangasee_url(url, driver)
+    
+    if web_name == "Dynasty Scans":    
+        return check_dynastyscans_url(url)
 
 def check_manga(web_name, url, last_chapter, driver: webdriver=None):
     
@@ -71,6 +74,8 @@ def check_manga(web_name, url, last_chapter, driver: webdriver=None):
     if web_name == "MangaSee":    
         return check_in_mangasee(web_name, url, last_chapter, driver)
     
+    if web_name == "Dynasty Scans":
+        return check_in_dynastyscans(web_name, url, last_chapter)
 
 # MANGA PLUS
 def check_mangaplus_url(url: str, driver: webdriver=None):
@@ -796,6 +801,95 @@ def __mangasee_search_new_chapters(chapters_list, last_chapter, mangasee_url):
     
     return new_chapters
 
+# DYNASTY SCANS
+def check_dynastyscans_url(url: str):
+    # Importamos la pagina en local
+    # content=__load_local_web(url)
+
+    # Realizamos la solicitud HTTP
+    response = __http_requests_to(url)
+
+    if response == None:
+        raise Exception(f"Error getting access to the web page({url})")
+    
+    # print("La petición fue aceptada")
+    content = response.content
+    
+    # Analiza el contenido HTML con BeautifulSoup
+    soup = BeautifulSoup(content, "html.parser")
+
+    # Encontrar el titulo del manga
+    div_main = soup.find("div", id="main")
+
+    # Verifica si se encontró el div principal
+    if not div_main:
+        raise Exception("No se encontró el div principal con id 'main'.")
+    
+    manga_title = div_main.find("h2").find("b").text # El metodo strip elimina los caracteres del tipo \n
+
+    # Verifica si se encontró el titulo del manga
+    if not manga_title:
+        raise Exception("No se encontró el titulo del manga")
+    
+    return manga_title
+
+
+def check_in_dynastyscans(web_name: str, url: str, last_chapter: str) -> str:
+    """
+    """
+    # Importamos la pagina en local
+    # local_web = url
+    # content=__load_local_web(local_web)
+    
+    # Realizamos la solicitud HTTP
+    response = __http_requests_to(url)
+
+    if response == None:
+        raise Exception(f"Error getting access to the web page({url})")
+    
+    # print("La petición fue aceptada")
+    content = response.content
+    
+    # Analiza el contenido HTML con BeautifulSoup
+    soup = BeautifulSoup(content, "html.parser")
+
+    # Encontrar la lista de capítulos
+    div_main = soup.find("dl", class_="chapter-list")
+
+    # Verifica si se encontró el div principal
+    if not div_main:
+        raise Exception("No se encontró el div principal con id 'main'.")
+
+    # Encuentra todos los enlaces (etiqueta <a>) dentro del div "main". Nos fijamos en la clase: "visited chapt"
+    chapter_links = div_main.find_all("a", class_="name")
+
+    # Buscamos cuantos capitulos nuevos hay
+    dynastyscans_url = __get_url_domain_db(web_name) 
+    new_chapters = __dynastyscans_search_new_chapters(chapter_links, last_chapter, dynastyscans_url)
+
+    # Si se ha encontrado algun capitulo nuevo lo actualizamos en la base de datos
+    if len(new_chapters)>0:
+        dbu.update_last_chapter(url, new_chapters)
+
+    return new_chapters
+
+def __dynastyscans_search_new_chapters(chapters_list, last_chapter, dynastyscans_url):
+    '''
+    '''
+    new_chapters = {}
+    for chapter_entry in reversed(chapters_list):
+        # Nos tenemos que fijar en la etiqueta b
+        chapter_number = chapter_entry.text # El primer caracter es un espacio, lo borramos
+
+        # Si encontramos el ultimo capitulo leido hemos terminado
+        if last_chapter == chapter_number: 
+            break
+        
+        # Cogemos el enlace del capitulo
+        link = chapter_entry['href']
+        new_chapters[chapter_number] = dynastyscans_url + link[1:]
+    
+    return new_chapters
 
 # COMMON METHODs =================================================================================
 

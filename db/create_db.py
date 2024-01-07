@@ -103,6 +103,13 @@ url_check = "https://mangasee123.com/manga/"
 javascript = 1
 cursor.execute(query, (web_name, url, url_check, javascript))
 
+# Dynasty Scans
+web_name = "Dynasty Scans"
+url = "https://dynasty-scans.com/"
+url_check = "https://dynasty-scans.com/series/"
+javascript = 0
+cursor.execute(query, (web_name, url, url_check, javascript))
+
 conn.commit()
 conn.close()
 

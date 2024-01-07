@@ -54,10 +54,8 @@ admin_button_list = [ # Configurar botones en formato vertical
     [__tracking_list],
     [__untracking],
     [__end],
-    [__notice],
-    [__info],
-    [__manga_updates],
-    [__update_tracking]
+    [__notice, __info],
+    [__manga_updates, __update_tracking]
 ]
 reply_markup_admin_menu = ReplyKeyboardMarkup(admin_button_list, one_time_keyboard=True)
 

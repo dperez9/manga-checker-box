@@ -534,8 +534,18 @@ async def multi_tracking_check_urls(update: Update, context: ContextTypes.DEFAUL
     
     user_id = update.message.from_user.id
     user_input = update.message.text
+    driver = context.user_data["driver"]
     bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - User sent: \n{user_input}")
     
+    if user_input == "/cancel":
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - User abort the multi_tracking process")
+        await context.bot.send_message(chat_id=user_id, text=f"Aborted /multi_tracking process. Select or write /help to get avaliable commands", reply_markup=reply_markup_menu)
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Closing web driver")        
+        driver.quit()
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Web driver closed")
+
+        return ConversationHandler.END
+
     url_list = __prepare_url_list(update, context, user_input)
     
     error_msg_n = 0 # Error message number
@@ -567,6 +577,10 @@ async def multi_tracking_check_urls(update: Update, context: ContextTypes.DEFAUL
         msg = msg + msg_manga_list
         msg = msg + f"Select or write /help to get avaliable commands"
         await context.bot.send_message(user_id=user_id, text=msg, reply_markup=reply_markup_menu)
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Closing web driver")        
+        driver.quit()
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Web driver closed")
+
         return ConversationHandler.END
     
     msg = f"Series recognized list:\n\n"
@@ -594,7 +608,10 @@ async def multi_tracking_confirmation(update: Update, context: ContextTypes.DEFA
         msg = msg + manga_msg
         msg = msg + "Select or write /multi_tracking to introduce a new list. Other wise select or write /help to get avaliable commands"
         await context.bot.send_message(chat_id=user_id, text=msg, reply_markup=reply_markup_menu)
+        
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Closing web driver")        
         driver.quit()
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Web driver closed")
 
         return ConversationHandler.END
     
@@ -604,6 +621,9 @@ async def multi_tracking_confirmation(update: Update, context: ContextTypes.DEFA
         dont_save_msg = "The list wasn't save. Select or write /tracking to introduce a the tracking. Other wise select or write /help to get avaliable commands"
         await context.bot.send_message(chat_id=user_id, text=dont_save_msg, reply_markup=reply_markup_menu)
 
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Closing web driver")        
+        driver.quit()
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Web driver closed")
         return ConversationHandler.END
 
     # De ingresar un caracter diferente, volveremos a preguntarle si el nick es valido
@@ -1004,7 +1024,16 @@ def __get_untracking_selection_number(selection: str):
     return output
 
 def __sorted_by_prioraticing_mangaplus(manga_info_list):
-    sorted_manga_info_list = sorted(manga_info_list, key=__mangaplus_sorted_func)
+    #sorted_manga_info_list = sorted(manga_info_list, key=__mangaplus_sorted_func)
+
+    sorted_manga_info_list = []
+    for manga_info in manga_info_list:
+        web_page = manga_info[3]
+        
+        if web_page != 'Manga Plus': # Si es distinto de manga plus lo guardamos al final de la lista
+            sorted_manga_info_list.append(manga_info)
+        else: # Si es igual a manga plus lo guardamos al comienzo de la lista
+            sorted_manga_info_list.insert(0, manga_info)
     return sorted_manga_info_list
 
 # Función de comparación personalizada

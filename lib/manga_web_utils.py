@@ -284,7 +284,7 @@ def check_visortmo_url(url: str):
     if response == None:
         raise Exception(f"Error getting access to the web page({url})")
     
-    print("La petición fue aceptada")
+    #print("La petición fue aceptada")
     content = response.content
     
     # Analiza el contenido HTML con BeautifulSoup
@@ -372,7 +372,7 @@ def check_mangakakalot_url(url: str):
     if response == None:
         raise Exception(f"Error getting access to the web page({url})")
     
-    print("La petición fue aceptada")
+    #print("La petición fue aceptada")
     content = response.content
     
     # Analiza el contenido HTML con BeautifulSoup
@@ -461,7 +461,7 @@ def check_mangakakalot_tv_url(url: str):
     if response == None:
         raise Exception(f"Error getting access to the web page({url})")
     
-    print("La petición fue aceptada")
+    #print("La petición fue aceptada")
     content = response.content
     
     # Analiza el contenido HTML con BeautifulSoup

@@ -18,6 +18,8 @@ manga_logger = lu.manga_logger
 __manga_checker_box_passwd = ju.get_sign_up_passwd()
 __admin_id = ju.get_admin_id()
 __time_to_wait_between_search = ju.get_config_var("time_to_wait_between_search") # Segundos
+__number_of_access_to_web_cooldown = ju.get_config_var("number_of_access_to_web_cooldown") # Segundos
+__time_to_wait_web_cooldown = ju.get_config_var("time_to_wait_web_cooldown") # Segundos
 
 # Teclados de Respuesta vars
 __yes = "Yes" # Option message 
@@ -192,8 +194,10 @@ async def update_tracking(context: ContextTypes.DEFAULT_TYPE):
     # Creamos un webdriver para las paginas que lo necesiten
     bot_logger.info(f"/TRACKING_ALL - Loading web driver")
     driver = ju.load_webdriver()
-
-    await tracking_all(context, notify, driver)
+    try:
+        await tracking_all(context, notify, driver)
+    except Exception as error:
+        bot_logger.info(f"/TRACKING_ALL - Unexpected error while tracking_all. Error:\n{error}")
 
     # Cerramos le navegador
     bot_logger.info(f"/TRACKING_ALL - Closing web driver")
@@ -607,6 +611,7 @@ async def multi_tracking_confirmation(update: Update, context: ContextTypes.DEFA
         msg = "I will let you know with new chapters from list:\n\n"
         msg = msg + manga_msg
         msg = msg + "Select or write /multi_tracking to introduce a new list. Other wise select or write /help to get avaliable commands"
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Sending ")       
         await context.bot.send_message(chat_id=user_id, text=msg, reply_markup=reply_markup_menu)
         
         bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Closing web driver")        
@@ -880,6 +885,7 @@ async def tracking_all(context: ContextTypes.DEFAULT_TYPE, notify: bool, driver:
     total_manga = len(table)
 
     # Recorrer los registros y obtener los valores
+    web_iterations = __create_web_iterations_dic()
     i = 1
     for row in table:
         url = row[0]
@@ -888,8 +894,16 @@ async def tracking_all(context: ContextTypes.DEFAULT_TYPE, notify: bool, driver:
         web_name = row[3]
         bot_logger.info(f"/TRACKING_ALL - Tracking({i}/{total_manga}): {name} - {web_name}")
         await tracking(context, web_name, url, name, last_chapter, notify, driver)
-        await asyncio.sleep(__time_to_wait_between_search)
-        i = i+1
+
+        web_iterations[web_name] += 1
+        bot_logger.info(f"/TRACKING_ALL - Number of access to {web_name}: {web_iterations[web_name]}")
+        if (web_iterations[web_name] % __number_of_access_to_web_cooldown) == 0:
+            bot_logger.info(f"/TRACKING_ALL - Number of access to {web_name} reached the limit! Cooldown is necessary. Waiting {__time_to_wait_web_cooldown} seconds...")
+            await asyncio.sleep(__time_to_wait_web_cooldown)
+        else:
+            await asyncio.sleep(__time_to_wait_between_search)
+
+        i += 1
     
     #bot_logger.info(f"/TRACKING_ALL - Tracked {total_manga} series")
 
@@ -1107,11 +1121,11 @@ async def __multi_tracking_track_manga_from_url(update: Update, context: Context
     last_chapter = ""
     tracking_success = True
     tracking_error_msg = ""
-    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Checking if manga is already in database")
+    bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Checking if {manga_name} is already in database")
     check = dbu.check_manga_url(url)
 
     if not check:
-        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - It not registered, creating an entry in database for {manga_name}")
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - It is not registered, creating an entry in database for {manga_name}")
         # Cremos una entrada en la base de datos para dicha serie
         web_name = dbu.select_web_name_from_manga_url(url)
         dbu.insert_manga(url, manga_name, "", web_name)
@@ -1140,8 +1154,10 @@ async def __multi_tracking_track_manga_from_url(update: Update, context: Context
     return manga_info
 
 async def __multi_tracking_track_and_msg(update: Update, context: ContextTypes.DEFAULT_TYPE, manga_info_list: list):
+    user_id = update.message.from_user.id
     msg = ""
 
+    count = 0
     for manga in manga_info_list:
         manga_error = manga[0]
         manga_url = manga[1]
@@ -1152,6 +1168,8 @@ async def __multi_tracking_track_and_msg(update: Update, context: ContextTypes.D
             continue
         
         # Hacemos tracking del manga
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Remain series to track: {len(manga_info_list) - count}")
+        bot_logger.info(f"{context.user_data['nickname']} ID({user_id}) - /MULTI_TRACKING - Tracking: {manga_name}")
         tracking_error_msg, url, name, last_chapter = await __multi_tracking_track_manga_from_url(update, context, url=manga_url, manga_name=manga_name)
 
         # Si habido un mensaje de error
@@ -1160,6 +1178,7 @@ async def __multi_tracking_track_and_msg(update: Update, context: ContextTypes.D
             continue
         
         msg = msg + f" > {name} - {last_chapter}\n\n"
+        count = count + 1
     
     return msg
 
@@ -1168,3 +1187,16 @@ def __generate_untracking_reply_markup_menu(n: int):
     for i in range(n):
         button_list.append([f"/{i+1}"])
     return ReplyKeyboardMarkup(button_list, one_time_keyboard=True)
+
+
+def __create_web_iterations_dic():
+    web_iterations = {}
+    table = dbu.select_available_webs()
+    
+    for row in table:
+        name = row[0]
+        url = row[1]
+        web_iterations[name] = 0
+
+    return web_iterations
+    

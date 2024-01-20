@@ -888,6 +888,7 @@ async def tracking_all(context: ContextTypes.DEFAULT_TYPE, notify: bool, driver:
 
     # Recorrer los registros y obtener los valores
     web_iterations = __create_web_iterations_dic()
+    previous_web = ""
     i = 1
     for row in table:
         url = row[0]
@@ -895,23 +896,24 @@ async def tracking_all(context: ContextTypes.DEFAULT_TYPE, notify: bool, driver:
         last_chapter = row[2]
         web_name = row[3]
         bot_logger.info(f"/TRACKING_ALL - Tracking({i}/{total_manga}): {name} - {web_name}")
-        if i == 66:
-            await tracking(context, web_name, url, name, last_chapter, notify, driver)
+        
+        await tracking(context, web_name, url, name, last_chapter, notify, driver)
 
         # Comprobamos que la URL sea accesible
         if dbu.select_url_access_error(url) >= __max_access_error_for_url:
             await notify_url_access_error_and_delete_tracking(context, url, name, web_name)
             
+        if previous_web == web_name:
+            await asyncio.sleep(__time_to_wait_between_search)
 
         web_iterations[web_name] += 1
         # bot_logger.info(f"/TRACKING_ALL - Number of access to {web_name}: {web_iterations[web_name]}")
         if (web_iterations[web_name] % __number_of_access_to_web_cooldown) == 0:
             bot_logger.info(f"/TRACKING_ALL - Number of access to {web_name} reached the limit! Cooldown is necessary. Waiting {__time_to_wait_web_cooldown} seconds...")
             await asyncio.sleep(__time_to_wait_web_cooldown)
-        else:
-            await asyncio.sleep(__time_to_wait_between_search)
 
         i += 1
+        previous_web = web_name
     
     #bot_logger.info(f"/TRACKING_ALL - Tracked {total_manga} series")
 

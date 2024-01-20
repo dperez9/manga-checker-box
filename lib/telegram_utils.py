@@ -20,6 +20,8 @@ __admin_id = ju.get_admin_id()
 __time_to_wait_between_search = ju.get_config_var("time_to_wait_between_search") # Segundos
 __number_of_access_to_web_cooldown = ju.get_config_var("number_of_access_to_web_cooldown") # Segundos
 __time_to_wait_web_cooldown = ju.get_config_var("time_to_wait_web_cooldown") # Segundos
+__max_access_error_for_url = ju.get_config_var("max_access_error_for_url") 
+__update_tracking_time_to_wait = ju.get_config_var("update_tracking_time_to_wait") # Milisegundos
 
 # Teclados de Respuesta vars
 __yes = "Yes" # Option message 
@@ -893,10 +895,16 @@ async def tracking_all(context: ContextTypes.DEFAULT_TYPE, notify: bool, driver:
         last_chapter = row[2]
         web_name = row[3]
         bot_logger.info(f"/TRACKING_ALL - Tracking({i}/{total_manga}): {name} - {web_name}")
-        await tracking(context, web_name, url, name, last_chapter, notify, driver)
+        if i == 66:
+            await tracking(context, web_name, url, name, last_chapter, notify, driver)
+
+        # Comprobamos que la URL sea accesible
+        if dbu.select_url_access_error(url) >= __max_access_error_for_url:
+            await notify_url_access_error_and_delete_tracking(context, url, name, web_name)
+            
 
         web_iterations[web_name] += 1
-        bot_logger.info(f"/TRACKING_ALL - Number of access to {web_name}: {web_iterations[web_name]}")
+        # bot_logger.info(f"/TRACKING_ALL - Number of access to {web_name}: {web_iterations[web_name]}")
         if (web_iterations[web_name] % __number_of_access_to_web_cooldown) == 0:
             bot_logger.info(f"/TRACKING_ALL - Number of access to {web_name} reached the limit! Cooldown is necessary. Waiting {__time_to_wait_web_cooldown} seconds...")
             await asyncio.sleep(__time_to_wait_web_cooldown)
@@ -928,13 +936,13 @@ async def notify_users_manga(context: ContextTypes.DEFAULT_TYPE, manga_url: str,
     table = dbu.select_users_tracking_manga(manga_url)
 
     # Generamos un mensaje y notificamos a todos los users que sigan dicho link
+    msg = __generate_message(name, new_chapters)
     for row in table:
         user_id = row[0]
         user_nick = dbu.select_user_nick(user_id)
-        msg = __generate_message(name, new_chapters)
 
-        bot_logger.info(f"/TRACKING_ALL - User {user_nick} ID({user_id}) recieved a notification: {msg}")
         await context.bot.send_message(chat_id=user_id, text=msg)
+        bot_logger.info(f"/TRACKING_ALL - User {user_nick} ID({user_id}) recieved a notification: {msg}")
 
 async def notify_users_msg(context: ContextTypes.DEFAULT_TYPE, msg: str):
     
@@ -946,8 +954,23 @@ async def notify_users_msg(context: ContextTypes.DEFAULT_TYPE, msg: str):
         user_id = row[0]
         user_nick = row[1]
 
-        bot_logger.info(f"/NOTICE - Notifying {user_nick} ID({user_id})")
         await context.bot.send_message(chat_id=user_id, text=msg)
+        bot_logger.info(f"/NOTICE - Notifying {user_nick} ID({user_id})")
+
+async def notify_url_access_error_and_delete_tracking(context: ContextTypes.DEFAULT_TYPE, manga_url: str, name: str, web_page: str):
+    
+    bot_logger.info(f"/TRACKING_ALL - ACCESS ERROR - Notifying users about deliting {name} from tracking")
+    table = dbu.select_users_tracking_manga(manga_url)
+
+    # Generamos un mensaje y notificamos a todos los users que sigan dicho link
+    msg = __generate_access_error_message(manga_url, name, web_page, dbu.select_url_access_error(manga_url), __update_tracking_time_to_wait)
+    for row in table:
+        user_id = row[0]
+        user_nick = dbu.select_user_nick(user_id)
+
+        await context.bot.send_message(chat_id=user_id, text=msg)
+        bot_logger.info(f"/TRACKING_ALL - User {user_nick} ID({user_id}) recieved a notification: {msg}")
+        await delete_user_tracking(user_id, manga_url, user_nick, "UNTRACKING")
 
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
@@ -977,6 +1000,17 @@ def __generate_message(name:str, chapters: dict) -> str:
     else:
         return ""
     
+def __generate_access_error_message(url: str, name: str, web_name: str, access_error_value: int, update_tracking_time_to_wait: int):
+    msg = ""
+    hours = access_error_value * (update_tracking_time_to_wait/3600) # numero_de_accesos * horas
+    msg = msg + f"Sorry :(\n"
+    msg = msg + f"One of your trackings have been inaccessible for {hours} hours\n\n"
+    msg = msg + f"  > {name} - {web_name}\n"
+    msg = msg + f"  > URL: {url}\n\n"
+    msg = msg + f"For this reason it will be delete. Sometimes a web page can change the URL from a specific series and I can't do anything about. Please search the new URL for the series and give it to me one more time ;)"
+
+    return msg
+
 def __generate_available_webs_msg():
 
     # Crearemos un mensaje que muestre el nombre de las webs y sus URLs

@@ -13,9 +13,10 @@ test_files/*
 
 # Archivos
 db/manga_tracker.db
-db/manga_tracker - copia.db
+db/manga_tracker copy.db
 db/diagrama
 db/diagrama.png
+db/pragma.txt
 key/admin_telegram_id
 key/manga_checker_box_passwd
 key/manga_checker_box_token

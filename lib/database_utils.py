@@ -257,6 +257,30 @@ def select_url_with_web_name(web_name: str):
 
     return output
 
+def select_url_access_error(url: str):
+    # Conectamos con la base de datos
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    # Consulta para seleccionar USER_ID y NAME en función de MANGA_URL
+    query = '''
+        SELECT ACCESS_ERROR
+        FROM MANGA
+        WHERE URL = ?
+        '''
+    cursor.execute(query, (url,))
+
+    table = cursor.fetchall()
+
+    # Cerrar la conexión con la base de datos
+    conn.close()
+
+    output = None
+    if len(table) != 0:
+        output = table[0][0]
+
+    return output
+
 # UPDATE METHODs =================================================================================
 
 def update_last_chapter(url: str, last_chapters: dict):
@@ -273,6 +297,24 @@ def update_last_chapter(url: str, last_chapters: dict):
     # Confirmar los cambios
     conn.commit()
     conn.close()
+
+def update_url_access_error(url: str, value: int=1):
+    # Conectamos a la base de datos
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    # Consulta para actualizar el campo LAST_CHAPTER
+    query = '''
+        UPDATE MANGA
+        SET ACCESS_ERROR = ACCESS_ERROR + ?
+        WHERE URL = ?
+        '''
+    cursor.execute(query, (value, url,))
+
+    # Confirmar los cambios
+    conn.commit()
+    conn.close()
+
 
 # CHECKS METHODs =================================================================================
 

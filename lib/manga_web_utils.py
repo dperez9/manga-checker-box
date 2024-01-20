@@ -598,7 +598,7 @@ def check_in_mangadex(web_name:str, url: str, last_chapter: str, driver: webdriv
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
     # Esperar a que la página cargue después del desplazamiento
-    time.sleep(0.2)
+    time.sleep(3)
 
     #Espera a que los elementos con la clase deseada estén presentes en la web
     try:
@@ -643,7 +643,8 @@ def check_in_mangadex(web_name:str, url: str, last_chapter: str, driver: webdriv
     chapter_list_span = __find_span_mangadex_chapters(span_list)
 
     chapter_list = chapter_list_a + chapter_list_span
-
+    #print(f"Chapter list: {chapter_list}")
+    
     # Ordenamos los capitulos, porque pueden estar desordenados al combinar las listas
     # Función que extrae el número de la cadena
     extract_number = lambda chapter: float(chapter.split()[-1]) # Dividimos las cadenas del tipo 'Chapter 42' en dos partes, seleccionamos la ultima(el numero) y eso lo usamos para ordenadar
@@ -972,11 +973,17 @@ def __http_requests_to(url: str, attempts=3):
                 answer = response
                 break # Salimos del bucle
             else:
-                raise Exception(f"[WARNING] It couldn't access to the web page({url}) - Attempt {i} - Status code: {response.status_code}")
+                raise Exception(f"[WARNING] It couldn't access to the web page({url}) - Attempt {i+1} - Status code: {response.status_code}")
         except Exception as error:
             # Mostrar un mensaje de advertencia
             print(f"{error}")
             # Esperar antes de intentar nuevamente
             time.sleep(request_waiting_error_time)
+
+            # Si el manga existe en la base de datos y el numero de intentos es el maximo incrementeamos
+            # el numero de accesos fallidos al mismo
+            if i == attempts-1 and dbu.check_manga_url(url):
+                dbu.update_url_access_error(url)
+                print(f"[WARNING] Access error increase to {dbu.select_url_access_error(url)} for '{url}'")
     
     return answer

@@ -32,6 +32,7 @@ query = (''' CREATE TABLE IF NOT EXISTS MANGA
             NAME             TEXT NOT NULL,
             LAST_CHAPTER     TEXT,
             WEB_NAME         TEXT NOT NULL,
+            ACCESS_ERROR     NUMERIC DEFAULT 0,
             FOREIGN KEY (WEB_NAME) REFERENCES WEBS(NAME) ON DELETE CASCADE);
          ''')
 

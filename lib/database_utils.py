@@ -298,7 +298,7 @@ def update_last_chapter(url: str, last_chapters: dict):
     conn.commit()
     conn.close()
 
-def update_url_access_error(url: str, value: int=1):
+def update_url_access_error(url: str, value: int):
     # Conectamos a la base de datos
     conn = sqlite3.connect(database_path)
     cursor = conn.cursor()
@@ -306,10 +306,10 @@ def update_url_access_error(url: str, value: int=1):
     # Consulta para actualizar el campo LAST_CHAPTER
     query = '''
         UPDATE MANGA
-        SET ACCESS_ERROR = ACCESS_ERROR + ?
+        SET ACCESS_ERROR = ?
         WHERE URL = ?
         '''
-    cursor.execute(query, (value, url,))
+    cursor.execute(query, (value,  url,))
 
     # Confirmar los cambios
     conn.commit()

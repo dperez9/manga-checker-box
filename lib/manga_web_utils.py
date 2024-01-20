@@ -971,6 +971,11 @@ def __http_requests_to(url: str, attempts=3):
             # Comprobar si la solicitud fue exitosa (código de respuesta 200)
             if response.status_code == 200:
                 answer = response
+
+                # Si esta en la base de datos resetamos su contador de access error
+                if dbu.check_manga_url(url):
+                    access_error = 0
+                    dbu.update_url_access_error(url, access_error)
                 break # Salimos del bucle
             else:
                 raise Exception(f"[WARNING] It couldn't access to the web page({url}) - Attempt {i+1} - Status code: {response.status_code}")
@@ -983,7 +988,8 @@ def __http_requests_to(url: str, attempts=3):
             # Si el manga existe en la base de datos y el numero de intentos es el maximo incrementeamos
             # el numero de accesos fallidos al mismo
             if i == attempts-1 and dbu.check_manga_url(url):
-                dbu.update_url_access_error(url)
+                access_error = dbu.select_url_access_error(url) + 1
+                dbu.update_url_access_error(url, access_error)
                 print(f"[WARNING] Access error increase to {dbu.select_url_access_error(url)} for '{url}'")
     
     return answer

@@ -175,6 +175,26 @@ def select_available_webs():
 
     return table
 
+def select_available_webs_names():
+    # Conectamos con la base de datos
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    # Consulta para seleccionar USER_ID y NAME en función de MANGA_URL
+    query = 'SELECT NAME FROM WEBS'
+    cursor.execute(query)
+
+    table = cursor.fetchall()
+
+    # Cerrar la conexión con la base de datos
+    conn.close()
+
+    output = []
+    for web in table:
+        output.append(web[0])
+
+    return output
+
 def select_available_webs_url_check():
     # Conectamos con la base de datos
     conn = sqlite3.connect(database_path)
@@ -269,6 +289,54 @@ def select_url_access_error(url: str):
         WHERE URL = ?
         '''
     cursor.execute(query, (url,))
+
+    table = cursor.fetchall()
+
+    # Cerrar la conexión con la base de datos
+    conn.close()
+
+    output = None
+    if len(table) != 0:
+        output = table[0][0]
+
+    return output
+
+def select_web_access_to_cooldown(web_name: str):
+    # Conectamos con la base de datos
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    # Consulta para seleccionar USER_ID y NAME en función de MANGA_URL
+    query = '''
+        SELECT ACCESS_TO_COOLDOWN
+        FROM WEBS
+        WHERE NAME = ?
+        '''
+    cursor.execute(query, (web_name,))
+
+    table = cursor.fetchall()
+
+    # Cerrar la conexión con la base de datos
+    conn.close()
+
+    output = None
+    if len(table) != 0:
+        output = table[0][0]
+
+    return output
+
+def select_web_time_to_wait_for_cooldown(web_name: str):
+    # Conectamos con la base de datos
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    # Consulta para seleccionar USER_ID y NAME en función de MANGA_URL
+    query = '''
+        SELECT TIME_TO_WAIT_FOR_COOLDOWN
+        FROM WEBS
+        WHERE NAME = ?
+        '''
+    cursor.execute(query, (web_name,))
 
     table = cursor.fetchall()
 

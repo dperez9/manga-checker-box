@@ -9,8 +9,6 @@
     "update_tracking_time_to_wait": 3600,
     "request_waiting_error_time": 4,
     "time_to_wait_between_search": 1,
-    "number_of_access_to_web_cooldown": 14,
-    "time_to_wait_web_cooldown": 25,
     "max_access_error_for_url": 48,
 
     "headers": {

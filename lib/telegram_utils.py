@@ -18,8 +18,6 @@ manga_logger = lu.manga_logger
 __manga_checker_box_passwd = ju.get_sign_up_passwd()
 __admin_id = ju.get_admin_id()
 __time_to_wait_between_search = ju.get_config_var("time_to_wait_between_search") # Segundos
-__number_of_access_to_web_cooldown = ju.get_config_var("number_of_access_to_web_cooldown") # Segundos
-__time_to_wait_web_cooldown = ju.get_config_var("time_to_wait_web_cooldown") # Segundos
 __max_access_error_for_url = ju.get_config_var("max_access_error_for_url") 
 __update_tracking_time_to_wait = ju.get_config_var("update_tracking_time_to_wait") # Milisegundos
 
@@ -887,6 +885,7 @@ async def tracking_all(context: ContextTypes.DEFAULT_TYPE, notify: bool, driver:
     total_manga = len(table)
 
     # Recorrer los registros y obtener los valores
+    number_of_access_to_web_cooldown_dict, time_to_wait_web_cooldown_dict = __get_webs_cooldown_info()
     web_iterations = __create_web_iterations_dic()
     previous_web = ""
     i = 1
@@ -908,9 +907,9 @@ async def tracking_all(context: ContextTypes.DEFAULT_TYPE, notify: bool, driver:
 
         web_iterations[web_name] += 1
         # bot_logger.info(f"/TRACKING_ALL - Number of access to {web_name}: {web_iterations[web_name]}")
-        if (web_iterations[web_name] % __number_of_access_to_web_cooldown) == 0:
-            bot_logger.info(f"/TRACKING_ALL - Number of access to {web_name} reached the limit! Cooldown is necessary. Waiting {__time_to_wait_web_cooldown} seconds...")
-            await asyncio.sleep(__time_to_wait_web_cooldown)
+        if (web_iterations[web_name] % number_of_access_to_web_cooldown_dict[web_name]) == 0:
+            bot_logger.info(f"/TRACKING_ALL - Number of access to {web_name} reached the limit! Cooldown is necessary. Waiting {time_to_wait_web_cooldown_dict[web_name]} seconds...")
+            await asyncio.sleep(time_to_wait_web_cooldown_dict[web_name])
 
         i += 1
         previous_web = web_name
@@ -1236,3 +1235,13 @@ def __create_web_iterations_dic():
 
     return web_iterations
     
+def __get_webs_cooldown_info():
+    web_list = dbu.select_available_webs_names()
+    number_of_access_to_web_cooldown_dict = {}
+    time_to_wait_web_cooldown_dict = {}
+
+    for web in web_list:
+        number_of_access_to_web_cooldown_dict[web] = dbu.select_web_access_to_cooldown(web)
+        time_to_wait_web_cooldown_dict[web] = dbu.select_web_time_to_wait_for_cooldown(web)
+    
+    return number_of_access_to_web_cooldown_dict, time_to_wait_web_cooldown_dict

@@ -95,8 +95,8 @@ cursor.execute(query, (web_name, url, url_check, javascript, access_to_cooldown,
 
 # Mangakakalot
 web_name = "Mangakakalot.tv"
-url = "https://ww7.mangakakalot.tv/"
-url_check = "https://ww7.mangakakalot.tv/"
+url = "https://ww8.mangakakalot.tv/"
+url_check = "https://ww8.mangakakalot.tv/"
 javascript = 0
 access_to_cooldown = 100
 time_to_wait_for_cooldown = 25

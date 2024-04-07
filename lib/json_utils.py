@@ -76,17 +76,40 @@ def load_webdriver()->webdriver:
     webdriver_browser_lower = webdriver_browser.lower()
 
     if webdriver_browser_lower == "chrome":
-        driver = webdriver.Chrome()
+        options = webdriver.ChromeOptions()
+        options.add_argument("--headless")  # Ejecutar en modo headless, sin ventana del navegador
+        options.add_argument("--disable-gpu")  # Deshabilitar aceleración de hardware
+        driver = webdriver.Chrome(options=options)
+
     elif webdriver_browser_lower == "chromiumedge":
-        driver = webdriver.ChromiumEdge()
+        options = webdriver.ChromeOptions()
+        options.add_argument("--headless")  # Ejecutar en modo headless, sin ventana del navegador
+        options.add_argument("--disable-gpu")  # Deshabilitar aceleración de hardware
+        driver = webdriver.ChromiumEdge(options=options)
+    
     elif webdriver_browser_lower == "firefox":
-        driver = webdriver.Firefox()
+        options = webdriver.FirefoxOptions()
+        options.add_argument("--headless")  # Ejecutar en modo headless, sin ventana del navegador
+        options.add_argument("--disable-gpu")  # Deshabilitar aceleración de hardware
+        driver = webdriver.Firefox(options=options)
+    
     elif webdriver_browser_lower == "edge":
-        driver = webdriver.Edge()
+        options = webdriver.EdgeOptions()
+        options.add_argument("--headless")  # Ejecutar en modo headless, sin ventana del navegador
+        options.add_argument("--disable-gpu")  # Deshabilitar aceleración de hardware
+        driver = webdriver.Edge(options=options)
+
     elif webdriver_browser_lower == "safari":
-        driver = webdriver.Safari()
+        options = webdriver.SafariOptions()
+        options.add_argument("--headless")  # Ejecutar en modo headless, sin ventana del navegador
+        options.add_argument("--disable-gpu")  # Deshabilitar aceleración de hardware
+        driver = webdriver.Safari(options=options)
+    
     else:
         print(f"[ERROR] Load_webdriver() - Error loading a valid web browser, {webdriver_browser} wasn't found. Loading Chrome instead. List of avaliable browsers: Chrome, ChromiumEdge, Firefox, Edge and Safari")
-        driver = webdriver.Chrome()
+        options = webdriver.ChromeOptions()
+        options.add_argument("--headless")  # Ejecutar en modo headless, sin ventana del navegador
+        options.add_argument("--disable-gpu")  # Deshabilitar aceleración de hardware
+        driver = webdriver.Chrome(options=options)
 
     return driver

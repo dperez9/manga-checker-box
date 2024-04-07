@@ -1,4 +1,5 @@
-sqlite3
+#sqlite3
+requests==2.27.1
 python-telegram-bot==20.6
 python-telegram-bot[job-queue]
 selenium==4.15.2

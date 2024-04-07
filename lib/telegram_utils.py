@@ -183,7 +183,8 @@ async def update_tracking_admin(update: Update, context: ContextTypes.DEFAULT_TY
     bot_logger.info(f"/UPDATE_TRACKING - Admin started tracking all")
     await update_tracking(context)
     bot_logger.info(f"/UPDATE_TRACKING - Tracking update completed!")
-    await context.bot.send_message(chat_id=user_id, text=f"Tracking update completed!", reply_markup=reply_markup_admin_menu)
+    #await context.bot.send_message(chat_id=user_id, text=f"Tracking update completed!", reply_markup=reply_markup_admin_menu)
+    await manga_updates(update, context)
 
 async def update_tracking(context: ContextTypes.DEFAULT_TYPE):
     notify = True 

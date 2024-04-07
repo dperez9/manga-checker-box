@@ -598,7 +598,7 @@ def check_in_mangadex(web_name:str, url: str, last_chapter: str, driver: webdriv
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
     # Esperar a que la página cargue después del desplazamiento
-    time.sleep(3)
+    time.sleep(5)
 
     #Espera a que los elementos con la clase deseada estén presentes en la web
     try:

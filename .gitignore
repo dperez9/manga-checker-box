@@ -21,7 +21,7 @@ key/admin_telegram_id
 key/manga_checker_box_passwd
 key/manga_checker_box_token
 db/test_db.py
-json/record.json
+json/records.json
 logs/logs.txt
 test_bot.py
 test_db.py
@@ -30,3 +30,5 @@ test_py.py
 test_selenium.py
 notas.txt
 mytracks.txt
+dockerfile
+.dockerignore

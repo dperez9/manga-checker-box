@@ -379,7 +379,7 @@ def check_chapmanganato_url(url: str):
     soup = BeautifulSoup(content, "html.parser")
 
     # Encontrar el titulo del manga
-    div_main = soup.find("div", class_="manga-info-top")
+    div_main = soup.find("div", class_="story-info-right")
 
     # Verifica si se encontró el div principal
     if not div_main:

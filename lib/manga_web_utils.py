@@ -35,8 +35,8 @@ def check_manga_name(url: str, driver: webdriver = None):
     if web_name == "TuMangaOnline":
         return check_visortmo_url(url)
     
-    if web_name == "Mangakakalot":    
-        return check_mangakakalot_url(url)
+    if web_name == "Chapmanganato.to":    
+        return check_chapmanganato_url(url)
     
     if web_name == "Mangakakalot.tv":    
         return check_mangakakalot_tv_url(url)
@@ -62,8 +62,8 @@ def check_manga(web_name, url, last_chapter, driver: webdriver=None):
     if web_name == "TuMangaOnline":
         return check_in_visortmo(web_name, url, last_chapter)
     
-    if web_name == "Mangakakalot":    
-        return check_in_mangakakalot(web_name, url, last_chapter)
+    if web_name == "Chapmanganato.to":    
+        return check_in_chapmanganato(web_name, url, last_chapter)
     
     if web_name == "Mangakakalot.tv":    
         return check_in_mangakakalot_tv(web_name, url, last_chapter)
@@ -361,8 +361,8 @@ def __visortmo_search_new_chapters(chapters_list, last_chapter, lectortmo_url):
     
     return new_chapters
 
-# MANGAKAKALOT
-def check_mangakakalot_url(url: str):
+# CHAPMANGANATO.TO
+def check_chapmanganato_url(url: str):
     # Importamos la pagina en local
     # content=__load_local_web(url)
 
@@ -379,7 +379,7 @@ def check_mangakakalot_url(url: str):
     soup = BeautifulSoup(content, "html.parser")
 
     # Encontrar el titulo del manga
-    div_main = soup.find("div", class_="manga-info-top")
+    div_main = soup.find("div", class_="story-info-right")
 
     # Verifica si se encontró el div principal
     if not div_main:
@@ -394,7 +394,7 @@ def check_mangakakalot_url(url: str):
     return manga_title
 
 
-def check_in_mangakakalot(web_name: str, url: str, last_chapter: str) -> str:
+def check_in_chapmanganato(web_name: str, url: str, last_chapter: str) -> str:
     """
     """
     # Importamos la pagina en local
@@ -412,19 +412,19 @@ def check_in_mangakakalot(web_name: str, url: str, last_chapter: str) -> str:
     
     # Analiza el contenido HTML con BeautifulSoup
     soup = BeautifulSoup(content, "html.parser")
-
+    
     # Encontrar la lista de capítulos
-    div_main = soup.find("div", class_="chapter-list")
+    div_main = soup.find("div", class_="panel-story-chapter-list")
 
     # Verifica si se encontró el div principal
     if not div_main:
-        raise Exception("No se encontró el div principal con id 'main'.")
+        raise Exception("No se encontró el div principal con id 'panel-story-chapter-list'.")
 
     # Encuentra todos los enlaces (etiqueta <a>) dentro del div "main". Nos fijamos en la clase: "visited chapt"
     chapter_links = div_main.find_all("a")
 
     # Buscamos cuantos capitulos nuevos hay
-    new_chapters = __mangakakalot_search_new_chapters(chapter_links, last_chapter)
+    new_chapters = __chapmanganato_search_new_chapters(chapter_links, last_chapter)
 
     # Si se ha encontrado algun capitulo nuevo lo actualizamos en la base de datos
     if len(new_chapters)>0:
@@ -432,7 +432,7 @@ def check_in_mangakakalot(web_name: str, url: str, last_chapter: str) -> str:
 
     return new_chapters
 
-def __mangakakalot_search_new_chapters(chapters_list, last_chapter):
+def __chapmanganato_search_new_chapters(chapters_list, last_chapter):
     '''
     '''
     new_chapters = {}

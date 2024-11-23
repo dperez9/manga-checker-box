@@ -83,9 +83,10 @@ def load_webdriver()->webdriver:
 
     elif webdriver_browser_lower == "chromiumedge":
         options = webdriver.ChromeOptions()
+        options.add_argument("/usr/bin/chromium-browser")
         options.add_argument("--headless")  # Ejecutar en modo headless, sin ventana del navegador
         options.add_argument("--disable-gpu")  # Deshabilitar aceleración de hardware
-        driver = webdriver.ChromiumEdge(options=options)
+        driver = webdriver.Chrome(options=options)
     
     elif webdriver_browser_lower == "firefox":
         options = webdriver.FirefoxOptions()

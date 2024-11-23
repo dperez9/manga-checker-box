@@ -30,3 +30,5 @@ test_py.py
 test_selenium.py
 notas.txt
 mytracks.txt
+dockerfile
+.dockerignore

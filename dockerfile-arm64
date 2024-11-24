@@ -27,6 +27,9 @@ RUN rm -r /tmp/*
 RUN export PATH=$PATH:/usr/local/bin/geckodriver
 RUN geckodriver --version
 
+# Desactivar Selenium Manager
+ENV SELENIUM_MANAGER_DISABLE=true
+
 # Instalamos python
 RUN apt -y install python3.10 
 RUN apt -y install python3-pip

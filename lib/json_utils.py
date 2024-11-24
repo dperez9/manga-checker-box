@@ -1,5 +1,6 @@
 import json
 from selenium import webdriver
+from selenium.webdriver.firefox.service import Service
 
 config_path = "json/config.json"
 record_path = "json/records.json"
@@ -93,6 +94,11 @@ def load_webdriver()->webdriver:
         options.add_argument("--headless")  # Ejecutar en modo headless, sin ventana del navegador
         options.add_argument("--disable-gpu")  # Deshabilitar aceleración de hardware
         driver = webdriver.Firefox(options=options)
+
+        # Para funcionar en ARM64, especificamos la ruta explicita de Geckodriver
+        # options.binary_location = '/usr/bin/firefox-esr'  # Ruta al binario de Firefox
+        # service = Service("/usr/local/bin/geckodriver")
+        # driver = webdriver.Firefox(service=service, options=options)
     
     elif webdriver_browser_lower == "edge":
         options = webdriver.EdgeOptions()

@@ -974,6 +974,8 @@ async def notify_url_access_error_and_delete_tracking(context: ContextTypes.DEFA
         bot_logger.info(f"/TRACKING_ALL - User {user_nick} ID({user_id}) recieved a notification: {msg}")
         await delete_user_tracking(user_id, manga_url, user_nick, "UNTRACKING")
 
+    dbu.delete_manga(manga_url)
+
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     bot_logger.info(f"User ID({user_id}) canceled the conversation")

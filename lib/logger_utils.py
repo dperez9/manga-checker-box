@@ -1,12 +1,34 @@
+import os
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import lib.json_utils as ju
+
+def create_path_and_file(file_path):
+    """
+    Crea todos los directorios necesarios para la ruta especificada y un archivo vacío al final.
+    
+    :param file_path: Ruta completa del archivo a crear.
+    """
+    # Extraer el directorio base de la ruta
+    dir_path = os.path.dirname(file_path)
+    
+    # Crear los directorios si no existen
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+        print(f"Dirs already created: {dir_path}")
+    
+    # Crear el archivo vacío
+    with open(file_path, 'w') as f:
+        pass  # Solo crear el archivo, sin escribir contenido
+    print(f"Log file created: {file_path}")
+
 
 __logger_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 __suffix = '%Y-%m-%d.log'
 
 # Configuración para el logger del bot
 __bot_logs_path = ju.get_config_var("logs_path") + "bot/bot.log" 
+create_path_and_file(__bot_logs_path)
 __bot_change_file_handler = TimedRotatingFileHandler(__bot_logs_path, when="midnight", backupCount=30) # Nos permitara ir actualizando el fichero log dia tras dia
 __bot_change_file_handler.suffix = __suffix # Establecemos el nombre que tendra el fichero
 
@@ -23,6 +45,7 @@ bot_logger.addHandler(__console_logger)  # Establecemos que la informacion tambi
 
 # Configuración para el logger de manga
 __manga_logs_path = ju.get_config_var("logs_path") + "manga_updates/manga.log"
+create_path_and_file(__manga_logs_path)
 __manga_change_file_handler = TimedRotatingFileHandler(__manga_logs_path, when="midnight", backupCount=30)
 __manga_change_file_handler.suffix = __suffix 
 
@@ -50,3 +73,4 @@ def parse_log_entry(log_entry):
     link = rest.strip()
 
     return date, time, manga_name, chapter, link
+

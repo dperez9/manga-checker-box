@@ -13,12 +13,15 @@ test_files/*
 
 # Archivos
 db/manga_tracker.db
-db/manga_tracker - copia.db
+db/manga_tracker copy.db
+db/diagrama
+db/diagrama.png
+db/pragma.txt
 key/admin_telegram_id
 key/manga_checker_box_passwd
 key/manga_checker_box_token
 db/test_db.py
-json/record.json
+json/records.json
 logs/logs.txt
 test_bot.py
 test_db.py
@@ -26,3 +29,5 @@ test_mwu.py
 test_py.py
 test_selenium.py
 notas.txt
+mytracks.txt
+manga-checker-box-code.zip

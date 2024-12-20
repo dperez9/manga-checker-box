@@ -18,7 +18,7 @@ headers = ju.get_config_var("headers")
 
 # METHODs ========================================================================================
 
-def check_manga_name(url: str):
+def check_manga_name(url: str, driver: webdriver = None):
     
     web_name = check_url(url)
 
@@ -27,7 +27,7 @@ def check_manga_name(url: str):
 
     # Buscamos que pagina web coincide
     if web_name == "Manga Plus":
-        return check_mangaplus_url(url)
+        return check_mangaplus_url(url, driver)
     
     if web_name == "Bato.to":
         return check_batoto_url(url)
@@ -35,21 +35,26 @@ def check_manga_name(url: str):
     if web_name == "TuMangaOnline":
         return check_visortmo_url(url)
     
-    if web_name == "Mangakakalot":    
-        return check_mangakakalot_url(url)
+    if web_name == "Chapmanganato.to":    
+        return check_chapmanganato_url(url)
     
     if web_name == "Mangakakalot.tv":    
         return check_mangakakalot_tv_url(url)
     
     if web_name == "MangaDex":    
-        return check_mangadex_url(url)
+        return check_mangadex_url(url, driver)
 
+    if web_name == "MangaSee":    
+        return check_mangasee_url(url, driver)
+    
+    if web_name == "Dynasty Scans":    
+        return check_dynastyscans_url(url)
 
-def check_manga(web_name, url, last_chapter):
+def check_manga(web_name, url, last_chapter, driver: webdriver=None):
     
     # Buscamos que pagina web coincide
     if web_name == "Manga Plus":
-        return check_in_mangaplus(web_name, url, last_chapter)
+        return check_in_mangaplus(web_name, url, last_chapter, driver)
     
     if web_name == "Bato.to":
         return check_in_batoto(web_name, url, last_chapter)
@@ -57,21 +62,28 @@ def check_manga(web_name, url, last_chapter):
     if web_name == "TuMangaOnline":
         return check_in_visortmo(web_name, url, last_chapter)
     
-    if web_name == "Mangakakalot":    
-        return check_in_mangakakalot(web_name, url, last_chapter)
+    if web_name == "Chapmanganato.to":    
+        return check_in_chapmanganato(web_name, url, last_chapter)
     
     if web_name == "Mangakakalot.tv":    
         return check_in_mangakakalot_tv(web_name, url, last_chapter)
 
     if web_name == "MangaDex":    
-        return check_in_mangadex(web_name, url, last_chapter)
+        return check_in_mangadex(web_name, url, last_chapter, driver)
+
+    if web_name == "MangaSee":    
+        return check_in_mangasee(web_name, url, last_chapter, driver)
     
+    if web_name == "Dynasty Scans":
+        return check_in_dynastyscans(web_name, url, last_chapter)
 
 # MANGA PLUS
-def check_mangaplus_url(url: str):
+def check_mangaplus_url(url: str, driver: webdriver=None):
     
-    # Copnfiguramos el driver de Selenium
-    driver = webdriver.Chrome()
+    local_driver = False
+    if driver == None:
+        driver = ju.load_webdriver()
+        local_driver = True
 
     # Obtemos la pagina web
     try: 
@@ -96,33 +108,42 @@ def check_mangaplus_url(url: str):
     manga_title = title.text.title() # title() Deja todas las palabras con la primera en mayuscula y el resto en minusculas
 
     # Cerramos el navegador
-    driver.quit()
+    if local_driver == True:
+        driver.quit()
 
     return manga_title
 
-def check_in_mangaplus(web_name:str, url: str, last_chapter: str):
-    
-    # Copnfiguramos el driver de Selenium
-    driver = webdriver.Chrome()
+def check_in_mangaplus(web_name:str, url: str, last_chapter: str, driver: webdriver=None):
+
+    local_driver = False
+    if driver == None:
+        driver = ju.load_webdriver()
+        local_driver = True
 
     # Obtemos la pagina web
-    driver.get(url)
+    try: 
+        driver.get(url)
+    except Exception as error:
+        raise Exception(f"Error requesting the url({url})")
 
     # Definimos los elementos a buscar
     chapter_list_class = "TitleDetail-module_main_19fsJ" # Clase que contiene la lista de mangas
     chapters_class_name = "ChapterListItem-module_title_3Id89" # Clase de los capitulos
     javascript_wait_time = 10 # Tiempo de espera maximo para cargar la pagina
 
-    #Espera a que los elementos con la clase deseada estén presentes en la web
-    WebDriverWait(driver, javascript_wait_time).until(
-        EC.presence_of_element_located((By.CLASS_NAME, chapter_list_class))
-    )
-
     # Hacemos scroll hacia abajo para que carguen todos los capitulos
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
     # Esperar a que la página cargue después del desplazamiento
-    time.sleep(0.8)
+    time.sleep(0.1)
+
+    #Espera a que los elementos con la clase deseada estén presentes en la web
+    try:
+        WebDriverWait(driver, javascript_wait_time).until(
+            EC.presence_of_element_located((By.CLASS_NAME, chapter_list_class))
+        )
+    except Exception as error:
+        raise Exception(f"Error finding chapter list class. Title({url})")
 
     # Obtiene el HTML de la página después de que se haya cargado completamente
     html = driver.page_source
@@ -139,6 +160,9 @@ def check_in_mangaplus(web_name:str, url: str, last_chapter: str):
     if len(new_chapters)>0:
         dbu.update_last_chapter(url, new_chapters)
     
+    if local_driver == True:
+        driver.quit()
+
     return new_chapters
 
 def __mangaplus_search_new_chapters(chapters_list, last_chapter, mangaplus_url):
@@ -260,7 +284,7 @@ def check_visortmo_url(url: str):
     if response == None:
         raise Exception(f"Error getting access to the web page({url})")
     
-    print("La petición fue aceptada")
+    #print("La petición fue aceptada")
     content = response.content
     
     # Analiza el contenido HTML con BeautifulSoup
@@ -337,8 +361,8 @@ def __visortmo_search_new_chapters(chapters_list, last_chapter, lectortmo_url):
     
     return new_chapters
 
-# MANGAKAKALOT
-def check_mangakakalot_url(url: str):
+# CHAPMANGANATO.TO
+def check_chapmanganato_url(url: str):
     # Importamos la pagina en local
     # content=__load_local_web(url)
 
@@ -348,14 +372,14 @@ def check_mangakakalot_url(url: str):
     if response == None:
         raise Exception(f"Error getting access to the web page({url})")
     
-    print("La petición fue aceptada")
+    #print("La petición fue aceptada")
     content = response.content
     
     # Analiza el contenido HTML con BeautifulSoup
     soup = BeautifulSoup(content, "html.parser")
 
     # Encontrar el titulo del manga
-    div_main = soup.find("div", class_="manga-info-top")
+    div_main = soup.find("div", class_="story-info-right")
 
     # Verifica si se encontró el div principal
     if not div_main:
@@ -370,7 +394,7 @@ def check_mangakakalot_url(url: str):
     return manga_title
 
 
-def check_in_mangakakalot(web_name: str, url: str, last_chapter: str) -> str:
+def check_in_chapmanganato(web_name: str, url: str, last_chapter: str) -> str:
     """
     """
     # Importamos la pagina en local
@@ -388,19 +412,19 @@ def check_in_mangakakalot(web_name: str, url: str, last_chapter: str) -> str:
     
     # Analiza el contenido HTML con BeautifulSoup
     soup = BeautifulSoup(content, "html.parser")
-
+    
     # Encontrar la lista de capítulos
-    div_main = soup.find("div", class_="chapter-list")
+    div_main = soup.find("div", class_="panel-story-chapter-list")
 
     # Verifica si se encontró el div principal
     if not div_main:
-        raise Exception("No se encontró el div principal con id 'main'.")
+        raise Exception("No se encontró el div principal con id 'panel-story-chapter-list'.")
 
     # Encuentra todos los enlaces (etiqueta <a>) dentro del div "main". Nos fijamos en la clase: "visited chapt"
     chapter_links = div_main.find_all("a")
 
     # Buscamos cuantos capitulos nuevos hay
-    new_chapters = __mangakakalot_search_new_chapters(chapter_links, last_chapter)
+    new_chapters = __chapmanganato_search_new_chapters(chapter_links, last_chapter)
 
     # Si se ha encontrado algun capitulo nuevo lo actualizamos en la base de datos
     if len(new_chapters)>0:
@@ -408,7 +432,7 @@ def check_in_mangakakalot(web_name: str, url: str, last_chapter: str) -> str:
 
     return new_chapters
 
-def __mangakakalot_search_new_chapters(chapters_list, last_chapter):
+def __chapmanganato_search_new_chapters(chapters_list, last_chapter):
     '''
     '''
     new_chapters = {}
@@ -437,7 +461,7 @@ def check_mangakakalot_tv_url(url: str):
     if response == None:
         raise Exception(f"Error getting access to the web page({url})")
     
-    print("La petición fue aceptada")
+    #print("La petición fue aceptada")
     content = response.content
     
     # Analiza el contenido HTML con BeautifulSoup
@@ -505,7 +529,7 @@ def __mangakakalot_tv_search_new_chapters(chapters_list, last_chapter, mangakaka
     new_chapters = {}
     for chapter_entry in chapters_list:
         # Nos tenemos que fijar en la etiqueta b
-        chapter_number = chapter_entry.text # El primer caracter es un espacio, lo borramos
+        chapter_number = chapter_entry.text.strip() # El primer caracter es un espacio, lo borramos
 
         # Si encontramos el ultimo capitulo leido hemos terminado
         if last_chapter == chapter_number: 
@@ -519,11 +543,13 @@ def __mangakakalot_tv_search_new_chapters(chapters_list, last_chapter, mangakaka
     return new_chapters
 
 # MANGADEX
-def check_mangadex_url(url: str):
+def check_mangadex_url(url: str, driver: webdriver=None):
     
-    # Copnfiguramos el driver de Selenium
-    driver = webdriver.Chrome()
-
+    local_driver = False
+    if driver == None:
+        driver = ju.load_webdriver()
+        local_driver = True
+    
     # Obtemos la pagina web
     try: 
         driver.get(url)
@@ -546,33 +572,41 @@ def check_mangadex_url(url: str):
     # Guardamos el titulo
     manga_title = title.text.title() # title() Deja todas las palabras con la primera en mayuscula y el resto en minusculas
 
-    # Cerramos el navegador
-    driver.quit()
+    if local_driver == True:
+        driver.quit()
 
     return manga_title
 
-def check_in_mangadex(web_name:str, url: str, last_chapter: str):
-    
-    # Copnfiguramos el driver de Selenium
-    driver = webdriver.Chrome()
+def check_in_mangadex(web_name:str, url: str, last_chapter: str, driver: webdriver=None):
+
+    local_driver = False
+    if driver == None:
+        driver = ju.load_webdriver()
+        local_driver = True
 
     # Obtemos la pagina web
-    driver.get(url)
+    try: 
+        driver.get(url)
+    except Exception as error:
+        raise Exception(f"Error requesting the url({url})")
 
     # Definimos los elementos a buscar
     chapter_list_class = "flex-grow" # Clase que contiene la lista de mangas
     javascript_wait_time = 10 # Tiempo de espera maximo para cargar la pagina
 
-    #Espera a que los elementos con la clase deseada estén presentes en la web
-    WebDriverWait(driver, javascript_wait_time).until(
-        EC.presence_of_element_located((By.CLASS_NAME, chapter_list_class))
-    )
-
     # Hacemos scroll hacia abajo para que carguen todos los capitulos
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
     # Esperar a que la página cargue después del desplazamiento
-    time.sleep(0.8)
+    time.sleep(5)
+
+    #Espera a que los elementos con la clase deseada estén presentes en la web
+    try:
+        WebDriverWait(driver, javascript_wait_time).until(
+            EC.presence_of_element_located((By.CLASS_NAME, chapter_list_class))
+        )
+    except Exception as error:
+        raise Exception(f"Error finding chapter list class. Title({url})")
 
     # Obtiene el HTML de la página después de que se haya cargado completamente
     html = driver.page_source
@@ -603,13 +637,14 @@ def check_in_mangadex(web_name:str, url: str, last_chapter: str):
 
     # Buscamos por la etiqueta de tipo <a>
     a_list = soup.find_all("a", class_=chapter_a_name)
-    chapter_list_a = __find_a_mangaplus_chapters(a_list)
+    chapter_list_a = __find_a_mangadex_chapters(a_list)
     
     span_list = soup.find_all("span", class_=chapters_span_name)
-    chapter_list_span = __find_span_mangaplus_chapters(span_list)
+    chapter_list_span = __find_span_mangadex_chapters(span_list)
 
     chapter_list = chapter_list_a + chapter_list_span
-
+    #print(f"Chapter list: {chapter_list}")
+    
     # Ordenamos los capitulos, porque pueden estar desordenados al combinar las listas
     # Función que extrae el número de la cadena
     extract_number = lambda chapter: float(chapter.split()[-1]) # Dividimos las cadenas del tipo 'Chapter 42' en dos partes, seleccionamos la ultima(el numero) y eso lo usamos para ordenadar
@@ -624,9 +659,12 @@ def check_in_mangadex(web_name:str, url: str, last_chapter: str):
     if len(new_chapters)>0:
         dbu.update_last_chapter(url, new_chapters)
     
+    if local_driver == True:
+        driver.quit()
+
     return new_chapters
 
-def __find_a_mangaplus_chapters(chapters_list):
+def __find_a_mangadex_chapters(chapters_list):
     output = [] # Capitulos validos - Aquellos que empiezan por 'Ch. '
     start_pattern = "Ch. "
     end_pattern = " - "
@@ -646,7 +684,7 @@ def __find_a_mangaplus_chapters(chapters_list):
 
     return output
 
-def __find_span_mangaplus_chapters(chapters_list):
+def __find_span_mangadex_chapters(chapters_list):
     output = []
     for chapter in chapters_list:
         output.append(chapter.text)
@@ -665,6 +703,194 @@ def __mangadex_search_new_chapters(chapters_list, last_chapter, mangadex_url):
     
     return new_chapters
 
+# MANGASEE
+def check_mangasee_url(url: str, driver: webdriver=None):
+
+    if driver == None:
+        # Realizamos la solicitud HTTP
+        response = __http_requests_to(url)
+
+        if response == None:
+            raise Exception(f"Error getting access to the web page({url})")
+        
+        # print("La petición fue aceptada")
+        content = response.content
+    else:
+        # Obtemos la pagina web
+        try: 
+            driver.get(url)
+        except Exception as error:
+            raise Exception(f"Error requesting the url({url})")
+
+        # Obtiene el HTML de la página después de que se haya cargado completamente
+        content = driver.page_source
+
+    # Analiza el contenido HTML con BeautifulSoup
+    soup = BeautifulSoup(content, "html.parser")
+
+    # Encontrar el titulo del manga
+    h1_main = soup.find("h1")
+
+    # Verifica si se encontró el div principal
+    if not h1_main:
+        raise Exception("No se encontró el div principal con id 'main'.")
+    
+    manga_title = h1_main.text
+
+    # Verifica si se encontró el titulo del manga
+    if not manga_title:
+        raise Exception("No se encontró el titulo del manga")
+    
+    return manga_title
+
+
+def check_in_mangasee(web_name:str, url: str, last_chapter: str, driver: webdriver=None):
+
+    local_driver = False
+    if driver == None:
+        driver = ju.load_webdriver()
+        local_driver = True
+
+    # Obtemos la pagina web
+    try: 
+        driver.get(url)
+    except Exception as error:
+        raise Exception(f"Error requesting the url({url})")
+
+    # Obtiene el HTML de la página después de que se haya cargado completamente
+    html = driver.page_source
+
+    # Ahora puedes analizar el HTML con BeautifulSoup
+    soup = BeautifulSoup(html, 'html.parser')
+
+    # Buscamos por la etiqueta de tipo <div>
+    div_main = soup.find_all("div", class_="list-group top-10 bottom-5 ng-scope")
+
+    if div_main == None:
+        raise Exception("No se encontró el div principal")
+    
+    # Buscamos los capitulos por la etiqueta <a>
+    chapter_list = soup.find_all("a", class_="list-group-item ChapterLink ng-scope")
+    
+    # Buscamos los nuevos capitulos
+    mangasee_url = __get_url_domain_db(web_name) 
+    new_chapters = __mangasee_search_new_chapters(chapter_list, last_chapter, mangasee_url)
+
+    # Si se ha encontrado algun capitulo nuevo lo actualizamos en la base de datos
+    if len(new_chapters)>0:
+        dbu.update_last_chapter(url, new_chapters)
+    
+    if local_driver == True:
+        driver.quit()
+
+    return new_chapters
+
+def __mangasee_search_new_chapters(chapters_list, last_chapter, mangasee_url):
+    new_chapters = {}
+    for chapter_entry in chapters_list:
+        chapter_number = chapter_entry.find("span", class_="ng-binding").text.strip() # strip elimina los caracteres especiales al principio y al final
+        chapter_number = chapter_number.replace('\n', ' ').replace('\t', '') # Elimina los caracteres especiales dentro de la cadena. Entre la palabra 'Chapter' y el numero del cap '1'. Se escribe un \n y multiples \t
+
+        # Si encontramos el ultimo capitulo leido hemos terminado
+        if last_chapter == chapter_number: 
+            break
+
+        # Aniadimos el nombre del nuevo capitulo y su enlace
+        chapter_id = chapter_entry['href'] # Obtenemos la referencia al capitulo
+        chapter_id = chapter_id[1:] # Eliminamos el primer caracter del id, que corresponde a la '/'
+        new_chapters[chapter_number] = mangasee_url+chapter_id
+    
+    return new_chapters
+
+# DYNASTY SCANS
+def check_dynastyscans_url(url: str):
+    # Importamos la pagina en local
+    # content=__load_local_web(url)
+
+    # Realizamos la solicitud HTTP
+    response = __http_requests_to(url)
+
+    if response == None:
+        raise Exception(f"Error getting access to the web page({url})")
+    
+    # print("La petición fue aceptada")
+    content = response.content
+    
+    # Analiza el contenido HTML con BeautifulSoup
+    soup = BeautifulSoup(content, "html.parser")
+
+    # Encontrar el titulo del manga
+    div_main = soup.find("div", id="main")
+
+    # Verifica si se encontró el div principal
+    if not div_main:
+        raise Exception("No se encontró el div principal con id 'main'.")
+    
+    manga_title = div_main.find("h2").find("b").text # El metodo strip elimina los caracteres del tipo \n
+
+    # Verifica si se encontró el titulo del manga
+    if not manga_title:
+        raise Exception("No se encontró el titulo del manga")
+    
+    return manga_title
+
+
+def check_in_dynastyscans(web_name: str, url: str, last_chapter: str) -> str:
+    """
+    """
+    # Importamos la pagina en local
+    # local_web = url
+    # content=__load_local_web(local_web)
+    
+    # Realizamos la solicitud HTTP
+    response = __http_requests_to(url)
+
+    if response == None:
+        raise Exception(f"Error getting access to the web page({url})")
+    
+    # print("La petición fue aceptada")
+    content = response.content
+    
+    # Analiza el contenido HTML con BeautifulSoup
+    soup = BeautifulSoup(content, "html.parser")
+
+    # Encontrar la lista de capítulos
+    div_main = soup.find("dl", class_="chapter-list")
+
+    # Verifica si se encontró el div principal
+    if not div_main:
+        raise Exception("No se encontró el div principal con id 'main'.")
+
+    # Encuentra todos los enlaces (etiqueta <a>) dentro del div "main". Nos fijamos en la clase: "visited chapt"
+    chapter_links = div_main.find_all("a", class_="name")
+
+    # Buscamos cuantos capitulos nuevos hay
+    dynastyscans_url = __get_url_domain_db(web_name) 
+    new_chapters = __dynastyscans_search_new_chapters(chapter_links, last_chapter, dynastyscans_url)
+
+    # Si se ha encontrado algun capitulo nuevo lo actualizamos en la base de datos
+    if len(new_chapters)>0:
+        dbu.update_last_chapter(url, new_chapters)
+
+    return new_chapters
+
+def __dynastyscans_search_new_chapters(chapters_list, last_chapter, dynastyscans_url):
+    '''
+    '''
+    new_chapters = {}
+    for chapter_entry in reversed(chapters_list):
+        # Nos tenemos que fijar en la etiqueta b
+        chapter_number = chapter_entry.text # El primer caracter es un espacio, lo borramos
+
+        # Si encontramos el ultimo capitulo leido hemos terminado
+        if last_chapter == chapter_number: 
+            break
+        
+        # Cogemos el enlace del capitulo
+        link = chapter_entry['href']
+        new_chapters[chapter_number] = dynastyscans_url + link[1:]
+    
+    return new_chapters
 
 # COMMON METHODs =================================================================================
 
@@ -745,16 +971,25 @@ def __http_requests_to(url: str, attempts=3):
             # Comprobar si la solicitud fue exitosa (código de respuesta 200)
             if response.status_code == 200:
                 answer = response
+
+                # Si esta en la base de datos resetamos su contador de access error
+                if dbu.check_manga_url(url):
+                    access_error = 0
+                    dbu.update_url_access_error(url, access_error)
                 break # Salimos del bucle
             else:
-                raise Exception(f"[WARNING] It couldn't access to the web page({url}) - Attempt {i} - Status code: {response.status_code}")
+                raise Exception(f"[WARNING] It couldn't access to the web page({url}) - Attempt {i+1} - Status code: {response.status_code}")
         except Exception as error:
             # Mostrar un mensaje de advertencia
             print(f"{error}")
             # Esperar antes de intentar nuevamente
             time.sleep(request_waiting_error_time)
+
+            # Si el manga existe en la base de datos y el numero de intentos es el maximo incrementeamos
+            # el numero de accesos fallidos al mismo
+            if i == attempts-1 and dbu.check_manga_url(url):
+                access_error = dbu.select_url_access_error(url) + 1
+                dbu.update_url_access_error(url, access_error)
+                print(f"[WARNING] Access error increase to {dbu.select_url_access_error(url)} for '{url}'")
     
     return answer
-
-
-        

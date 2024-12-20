@@ -140,6 +140,24 @@ def select_user_manga_list(user_id: str):
 
     return table
 
+def select_user_tracking_list(user_id:str):
+    # Conectamos con la base de datos
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    # Consulta para seleccionar USER_ID y NAME en función de MANGA_URL
+    query = '''
+        SELECT MANGA_URL
+        FROM TRACKING
+        WHERE TRACKING.USER_ID = ?
+    '''
+    cursor.execute(query, (user_id,))
+
+    table = cursor.fetchall()
+
+    # Cerrar la conexión con la base de datos
+    conn.close()
+    return table
 
 def select_available_webs():
     # Conectamos con la base de datos
@@ -156,6 +174,26 @@ def select_available_webs():
     conn.close()
 
     return table
+
+def select_available_webs_names():
+    # Conectamos con la base de datos
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    # Consulta para seleccionar USER_ID y NAME en función de MANGA_URL
+    query = 'SELECT NAME FROM WEBS'
+    cursor.execute(query)
+
+    table = cursor.fetchall()
+
+    # Cerrar la conexión con la base de datos
+    conn.close()
+
+    output = []
+    for web in table:
+        output.append(web[0])
+
+    return output
 
 def select_available_webs_url_check():
     # Conectamos con la base de datos
@@ -215,6 +253,102 @@ def select_users_tracking_manga(manga_url: str):
 
     return table
 
+def select_url_with_web_name(web_name: str):
+    # Conectamos con la base de datos
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    # Consulta para seleccionar USER_ID y NAME en función de MANGA_URL
+    query = '''
+        SELECT URL
+        FROM WEBS
+        WHERE NAME = ?
+        '''
+    cursor.execute(query, (web_name,))
+
+    table = cursor.fetchall()
+
+    # Cerrar la conexión con la base de datos
+    conn.close()
+
+    output = None
+    if len(table) != 0:
+        output = table[0][0]
+
+    return output
+
+def select_url_access_error(url: str):
+    # Conectamos con la base de datos
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    # Consulta para seleccionar USER_ID y NAME en función de MANGA_URL
+    query = '''
+        SELECT ACCESS_ERROR
+        FROM MANGA
+        WHERE URL = ?
+        '''
+    cursor.execute(query, (url,))
+
+    table = cursor.fetchall()
+
+    # Cerrar la conexión con la base de datos
+    conn.close()
+
+    output = None
+    if len(table) != 0:
+        output = table[0][0]
+
+    return output
+
+def select_web_access_to_cooldown(web_name: str):
+    # Conectamos con la base de datos
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    # Consulta para seleccionar USER_ID y NAME en función de MANGA_URL
+    query = '''
+        SELECT ACCESS_TO_COOLDOWN
+        FROM WEBS
+        WHERE NAME = ?
+        '''
+    cursor.execute(query, (web_name,))
+
+    table = cursor.fetchall()
+
+    # Cerrar la conexión con la base de datos
+    conn.close()
+
+    output = None
+    if len(table) != 0:
+        output = table[0][0]
+
+    return output
+
+def select_web_time_to_wait_for_cooldown(web_name: str):
+    # Conectamos con la base de datos
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    # Consulta para seleccionar USER_ID y NAME en función de MANGA_URL
+    query = '''
+        SELECT TIME_TO_WAIT_FOR_COOLDOWN
+        FROM WEBS
+        WHERE NAME = ?
+        '''
+    cursor.execute(query, (web_name,))
+
+    table = cursor.fetchall()
+
+    # Cerrar la conexión con la base de datos
+    conn.close()
+
+    output = None
+    if len(table) != 0:
+        output = table[0][0]
+
+    return output
+
 # UPDATE METHODs =================================================================================
 
 def update_last_chapter(url: str, last_chapters: dict):
@@ -231,6 +365,24 @@ def update_last_chapter(url: str, last_chapters: dict):
     # Confirmar los cambios
     conn.commit()
     conn.close()
+
+def update_url_access_error(url: str, value: int):
+    # Conectamos a la base de datos
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    # Consulta para actualizar el campo LAST_CHAPTER
+    query = '''
+        UPDATE MANGA
+        SET ACCESS_ERROR = ?
+        WHERE URL = ?
+        '''
+    cursor.execute(query, (value,  url,))
+
+    # Confirmar los cambios
+    conn.commit()
+    conn.close()
+
 
 # CHECKS METHODs =================================================================================
 
@@ -314,8 +466,43 @@ def check_already_tracking(user_id: str, url: str):
             return True
     return False
 
+def check_is_javascript_web(web_name:str):
+    # Conectando con la base de datos
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    # Consulta para seleccionar todos los registros de la tabla WEBS
+    query = 'SELECT JAVASCRIPT FROM WEBS WHERE NAME = ?'
+    cursor.execute(query, (web_name,))
+
+    # Obtener todos los registros
+    table = cursor.fetchall()
+    conn.close()
+
+    if len(table) == 0:
+        raise Exception(f"[ERROR] The web name '{web_name}' it doesn't exist")
+    
+    output = bool(table[0][0]) # Devuelve una lista de tuplas. En la primera tupla, se encuentra el valor
+    return output
+
 
 # DELETE METHODs =================================================================================
+def delete_user(user_id):
+    # Conectamos con la base de datos
+    conn = sqlite3.connect(database_path)
+    cursor = conn.cursor()
+
+    # Consulta para seleccionar USER_ID y NAME en función de MANGA_URL
+    query = 'DELETE FROM USERS WHERE ID = ?'
+    cursor.execute(query, (user_id,))
+
+    #table = cursor.fetchall()
+
+    # Confirmar los cambios y cerrar la conexión con la base de datos
+    conn.commit()
+    conn.close()
+
+
 def delete_manga(manga_url: str):
 
     # Conectamos con la base de datos
@@ -326,7 +513,7 @@ def delete_manga(manga_url: str):
     query = 'DELETE FROM MANGA WHERE URL = ?'
     cursor.execute(query, (manga_url,))
 
-    table = cursor.fetchall()
+    #table = cursor.fetchall()
 
     # Confirmar los cambios y cerrar la conexión con la base de datos
     conn.commit()

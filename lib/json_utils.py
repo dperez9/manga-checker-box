@@ -1,4 +1,6 @@
 import json
+from selenium import webdriver
+from selenium.webdriver.firefox.service import Service
 
 config_path = "json/config.json"
 record_path = "json/records.json"
@@ -69,3 +71,52 @@ def get_admin_id():
         output = file.readline()
 
     return output 
+
+def load_webdriver()->webdriver:
+    webdriver_browser = get_config_var("webdriver_browser")
+    webdriver_browser_lower = webdriver_browser.lower()
+
+    if webdriver_browser_lower == "chrome":
+        options = webdriver.ChromeOptions()
+        options.add_argument("--headless")  # Ejecutar en modo headless, sin ventana del navegador
+        options.add_argument("--disable-gpu")  # Deshabilitar aceleración de hardware
+        driver = webdriver.Chrome(options=options)
+
+    elif webdriver_browser_lower == "chromiumedge":
+        options = webdriver.ChromeOptions()
+        options.add_argument("/usr/bin/chromium-browser")
+        options.add_argument("--headless")  # Ejecutar en modo headless, sin ventana del navegador
+        options.add_argument("--disable-gpu")  # Deshabilitar aceleración de hardware
+        driver = webdriver.Chrome(options=options)
+    
+    elif webdriver_browser_lower == "firefox":
+        options = webdriver.FirefoxOptions()
+        options.add_argument("--headless")  # Ejecutar en modo headless, sin ventana del navegador
+        options.add_argument("--disable-gpu")  # Deshabilitar aceleración de hardware
+        driver = webdriver.Firefox(options=options)
+
+        # Para funcionar en ARM64, especificamos la ruta explicita de Geckodriver
+        # options.binary_location = '/usr/bin/firefox-esr'  # Ruta al binario de Firefox
+        # service = Service("/usr/local/bin/geckodriver")
+        # driver = webdriver.Firefox(service=service, options=options)
+    
+    elif webdriver_browser_lower == "edge":
+        options = webdriver.EdgeOptions()
+        options.add_argument("--headless")  # Ejecutar en modo headless, sin ventana del navegador
+        options.add_argument("--disable-gpu")  # Deshabilitar aceleración de hardware
+        driver = webdriver.Edge(options=options)
+
+    elif webdriver_browser_lower == "safari":
+        options = webdriver.SafariOptions()
+        options.add_argument("--headless")  # Ejecutar en modo headless, sin ventana del navegador
+        options.add_argument("--disable-gpu")  # Deshabilitar aceleración de hardware
+        driver = webdriver.Safari(options=options)
+    
+    else:
+        print(f"[ERROR] Load_webdriver() - Error loading a valid web browser, {webdriver_browser} wasn't found. Loading Chrome instead. List of avaliable browsers: Chrome, ChromiumEdge, Firefox, Edge and Safari")
+        options = webdriver.ChromeOptions()
+        options.add_argument("--headless")  # Ejecutar en modo headless, sin ventana del navegador
+        options.add_argument("--disable-gpu")  # Deshabilitar aceleración de hardware
+        driver = webdriver.Chrome(options=options)
+
+    return driver

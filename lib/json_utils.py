@@ -100,6 +100,17 @@ def load_webdriver()->webdriver:
         # service = Service("/usr/local/bin/geckodriver")
         # driver = webdriver.Firefox(service=service, options=options)
     
+    elif webdriver_browser_lower == "firefox-arm":
+        options = webdriver.FirefoxOptions()
+        # Para funcionar en ARM64, especificamos la ruta explicita de Geckodriver
+        options.binary_location = '/usr/bin/firefox-esr'  # Ruta al binario de Firefox
+        service = Service("/usr/local/bin/geckodriver")
+
+        options.add_argument("--headless")  # Ejecutar en modo headless, sin ventana del navegador
+        options.add_argument("--disable-gpu")  # Deshabilitar aceleración de hardware
+
+        driver = webdriver.Firefox(service=service, options=options)
+    
     elif webdriver_browser_lower == "edge":
         options = webdriver.EdgeOptions()
         options.add_argument("--headless")  # Ejecutar en modo headless, sin ventana del navegador

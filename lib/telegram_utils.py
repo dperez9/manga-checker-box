@@ -1,3 +1,4 @@
+import os
 import time
 import datetime
 import asyncio
@@ -15,8 +16,8 @@ bot_logger = lu.bot_logger
 manga_logger = lu.manga_logger
 
 # Private vars
-__manga_checker_box_passwd = ju.get_sign_up_passwd()
-__admin_id = ju.get_admin_id()
+__manga_checker_box_passwd = os.getenv("MANGA_CHECKER_BOX_PASSWD")
+__admin_id = os.getenv("ADMIN_TELEGRAM_ID")
 __time_to_wait_between_search = ju.get_config_var("time_to_wait_between_search") # Segundos
 __max_access_error_for_url = ju.get_config_var("max_access_error_for_url") 
 __update_tracking_time_to_wait = ju.get_config_var("update_tracking_time_to_wait") # Milisegundos

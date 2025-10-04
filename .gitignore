@@ -10,6 +10,7 @@ selenium_help/
 selenium_help/*
 test_files/
 test_files/*
+key/
 
 # Archivos
 db/manga_tracker.db

@@ -1,3 +1,4 @@
+import os
 import lib.telegram_utils as tu
 import lib.json_utils as ju
 import lib.time_utils as timu
@@ -9,7 +10,8 @@ from telegram.ext import (
     filters,
 )
 
-TOKEN = ju.get_api_token()
+# TOKEN = ju.get_api_token() # Load token from file
+TOKEN = os.getenv("MANGA_CHECKER_BOX_TOKEN")
 update_tracking_time_to_wait = ju.get_config_var("update_tracking_time_to_wait") # Tiempo en segundos
 initial_tracking_time_wait = timu.seconds_until_next_hour()
 

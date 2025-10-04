@@ -32,6 +32,9 @@ RUN geckodriver --version
 RUN apt -y install python3.10 
 RUN apt -y install python3-pip
 
+# Creamos un usuario no root (UID/GID 1000) - Creamos un grupo appgroup y le agregamos el usuario appuser con gid 1000
+RUN groupadd -r appgroup && useradd -r -g appgroup -u 1000 appuser
+
 # Copy the requirements in app folder and install them (To create new cache files and not copy project cache files)
 WORKDIR /opt/app
 COPY ./requirements.txt ./requirements.txt
@@ -39,6 +42,15 @@ RUN pip install -r requirements.txt
 
 # Copy project content to app folder
 COPY . /opt/app
+
+# Dar permisos al usuario no root
+RUN chown -R appuser:appgroup /opt/app
+
+# Damos permisos al usuario no root sobre la carpeta en la que se va alojar la BBDD
+RUN mkdir -p /db && chown -R appuser:appgroup /db
+
+# Cambiamos al usuario no root
+USER appuser
 
 EXPOSE 8081
 CMD ["python3", "main.py"]

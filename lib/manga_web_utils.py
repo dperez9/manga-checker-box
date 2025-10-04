@@ -12,7 +12,7 @@ import lib.database_utils as dbu
 import lib.json_utils as ju
 
 # VARs ===========================================================================================
-database_path = ju.get_config_var("database_path")
+database_path = os.getenv("DB_PATH")
 request_waiting_error_time = ju.get_config_var("request_waiting_error_time")
 headers = ju.get_config_var("headers")
 

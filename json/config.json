@@ -1,5 +1,4 @@
 {
-    "database_path": "db/manga_tracker.db",
     "logs_path": "logs/",
 
     "webdriver_browser": "Firefox",

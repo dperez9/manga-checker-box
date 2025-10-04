@@ -1,0 +1,35 @@
+
+fullname: manga-checker-box
+
+image:
+  repository: "manga-checker-box"
+  tag: "latest"
+  pullPolicy: Always
+
+replicaCount: 1
+
+# Crea un secreto con tres valores a aniadir en kubernetes
+secret:
+  name: "manga-checker-box"
+
+persistence:
+  enabled: true
+  storageClass: ""        # o pon tu storageClass si usas una específica
+  size: 10Mi
+  accessModes:
+    - ReadWriteOnce
+  mountPath: /db
+  dbFilename: manga_tracker.db
+
+# Variables no secretas comunes
+env:
+  EXTRA_OPTS: ""
+
+# LivenessProbe común para ambos entornos
+livenessProbe:
+  enabled: true
+  execCommand: "curl -s --max-time 5 https://api.telegram.org/bot >/dev/null"
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 3

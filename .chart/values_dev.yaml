@@ -1,0 +1,8 @@
+fullname: manga-checker-box-dev
+
+image:
+  tag: "development"
+  pullPolicy: Always
+
+secret:
+  name: "manga-checker-box-dev"

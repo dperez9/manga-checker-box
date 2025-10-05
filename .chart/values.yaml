@@ -2,7 +2,7 @@
 fullname: manga-checker-box
 
 image:
-  repository: "manga-checker-box"
+  repository: "harbor.boxhomelab.com/telegram-bots/manga-checker-box"
   tag: "latest"
   pullPolicy: Always
 
@@ -20,10 +20,6 @@ persistence:
     - ReadWriteOnce
   mountPath: /db
   dbFilename: manga_tracker.db
-
-# Variables no secretas comunes
-env:
-  EXTRA_OPTS: ""
 
 # LivenessProbe común para ambos entornos
 livenessProbe:

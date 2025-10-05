@@ -30,13 +30,12 @@ spec:
         - name: bot
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          env:
-            - secretKeyRef:
+          envFrom:
+            - secretRef:
                 name: {{ .Values.secret.name }}
+          env:
             - name: DB_PATH
               value: "{{ .Values.persistence.mountPath }}/{{ .Values.persistence.dbFilename }}"
-            - name: EXTRA_OPTS
-              value: {{ .Values.env.EXTRA_OPTS | quote }}
 
           volumeMounts:
             - name: data
@@ -63,4 +62,5 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: {{ .Values.fullname | default .Release.Name }}
-
+      imagePullSecrets:
+      - name: harbor-robot

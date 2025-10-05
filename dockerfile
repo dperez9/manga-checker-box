@@ -5,11 +5,12 @@ USER root
 RUN apt -y update
 RUN apt -y install wget tar bzip2
 RUN apt -y install libgtk-3-0 libdbus-glib-1-2 libxt6 libx11-6 libxrender1 libasound2 libpango-1.0-0 libavcodec58 libavformat58 libavutil56
+RUN apt -y update && apt -y install wget tar xz-utils ca-certificates && update-ca-certificates
 
 # Instalamos Firefox pero sin usar apt/version snap (No es compatible, no se comunica de forma correcta con geckodriver)
 WORKDIR /tmp
-RUN wget -O firefox-latest.tar.bz2 "https://download.mozilla.org/?product=firefox-latest&os=linux64&lang=en-US" 
-RUN tar xjf firefox-latest.tar.bz2 
+RUN wget -O firefox-latest.tar.xz "https://download.mozilla.org/?product=firefox-latest&os=linux64&lang=en-US" 
+RUN tar xJf firefox-latest.tar.xz
 RUN mv firefox /opt/firefox-latest 
 RUN ln -s /opt/firefox-latest/firefox /usr/bin/firefox 
 RUN rm -r /tmp/*

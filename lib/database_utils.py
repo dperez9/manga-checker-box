@@ -1,7 +1,9 @@
+import os
 import sqlite3
 import lib.json_utils as ju
 
-database_path = ju.get_config_var("database_path")
+# database_path = ju.get_config_var("database_path")
+database_path = os.getenv("DB_PATH")
 
 # INSERT METHODs =================================================================================
 

@@ -14,6 +14,7 @@ key/
 
 # Archivos
 db/manga_tracker.db
+db/manga_tracker_dev.db
 db/manga_tracker copy.db
 db/diagrama
 db/diagrama.png

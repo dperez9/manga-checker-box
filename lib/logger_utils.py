@@ -1,3 +1,4 @@
+import sys
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import lib.json_utils as ju
@@ -17,7 +18,7 @@ __bot_change_file_handler.setFormatter(__bot_formatter) # Le pasamos el formato 
 bot_logger = logging.getLogger() # Creamos el bot con e nombre del paquete (__name__)
 bot_logger.setLevel(logging.INFO) # Le establecemos el nivel minimo de informacion
 bot_logger.addHandler(__bot_change_file_handler) # Le pasamos el file handler
-__console_logger = logging.StreamHandler() # Creamos un handler que nos permita visualizar los logs tambien por consola
+__console_logger = logging.StreamHandler(sys.stdout) # Creamos un handler que nos permita visualizar los logs tambien por consola
 __console_logger.setFormatter(__bot_formatter) # Le aplicamos el formato de los logs
 bot_logger.addHandler(__console_logger)  # Establecemos que la informacion tambien se muestre en la consola
 

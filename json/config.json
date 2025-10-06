@@ -1,5 +1,5 @@
 {
-    "logs_path": "logs/",
+    "logs_path": "/opt/app/logs/",
 
     "webdriver_browser": "Firefox",
     "update_tracking_time_to_wait": 3600,

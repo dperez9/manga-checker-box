@@ -50,6 +50,11 @@ RUN chown -R appuser:appgroup /opt/app
 # Damos permisos al usuario no root sobre la carpeta en la que se va alojar la BBDD
 RUN mkdir -p /db && chown -R appuser:appgroup /db
 
+# Creamos las carpetas que usara el bot para almacenar logs y le damos permisos
+RUN mkdir ./logs && chown -R appuser:appgroup ./logs
+RUN mkdir ./logs/bot && chown -R appuser:appgroup ./logs/bot
+RUN mkdir ./logs/manga_updates && chown -R appuser:appgroup ./logs/manga_updates
+
 # Cambiamos al usuario no root
 USER appuser
 

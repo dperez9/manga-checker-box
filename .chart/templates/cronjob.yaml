@@ -1,0 +1,76 @@
+{{- if .Values.cronjob.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Values.fullname | default .Release.Name }}
+  namespace: bots
+spec:
+  schedule: "{{ .Values.cronjob.schedule }}"
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 60   # Elimina el job tras 60 segundos
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              image: alpine:3.20
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  echo "[INFO] Starting backup..."
+
+                  if [ -d "{{ .Values.persistence.mountPath }}" ]; then
+                    echo "[INFO] Directory exists. Proceeding with backup..."
+                    cp -v "{{ .Values.persistence.mountPath }}/{{ .Values.persistence.dbFilename }}" "{{ .Values.cronjob.nfs_path }}/{{ .Values.persistence.dbFilename }}"
+                    echo "[INFO] Backup completed."
+                  else
+                    echo "[WARN] Directory {{ .Values.persistence.mountPath }} does not exist. Skipping backup."
+                    exit 1
+                  fi
+                  exit 0
+              volumeMounts:
+                - name: data
+                  mountPath: "{{ .Values.persistence.mountPath }}"
+                - name: nfs-backup
+                  mountPath: "{{ .Values.cronjob.nfs_path }}"
+          volumes:
+            - name: data
+              persistentVolumeClaim:
+                claimName: {{ .Values.fullname | default .Release.Name }}
+            - name: nfs-backup
+              persistentVolumeClaim: 
+                claimName: "{{ .Values.cronjob.name }}"
+                  
+{{- end }}
+
+# --- # test
+# apiVersion: v1
+# kind: Pod
+# metadata:
+#   name: nfs-backup-test
+#   namespace: bots
+# spec:
+#   containers:
+#     - name: backup
+#       image: alpine:3.20
+#       command:
+#         - /bin/sh
+#         - -c
+#         - |
+#           echo "[INFO] Starting backup..."
+#           cp -v /db/manga_tracker_dev.db /backup/manga_tracker_dev.db
+#           echo "[INFO] Backup completed."
+#       volumeMounts:
+#         - name: data
+#           mountPath: /db
+#         - name: backup
+#           mountPath: /backup
+#   volumes:
+#     - name: data
+#       persistentVolumeClaim:
+#         claimName: manga-checker-box-dev
+#     - name: backup
+#       persistentVolumeClaim: 
+#         claimName: sqlite-backup-dev-nfs

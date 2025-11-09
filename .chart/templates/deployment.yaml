@@ -17,17 +17,18 @@ spec:
         app.kubernetes.io/name: {{ .Values.fullname | default .Release.Name }}
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
-        allowPrivilegeEscalation: false
-        readOnlyRootFilesystem: false
-        seccompProfile:
-          type: RuntimeDefault
+      # # La agregación del securityCcontext requiere un mayor numero de pruebas
+      # securityContext:
+      #   runAsNonRoot: true
+      #   runAsUser: 1000
+      #   runAsGroup: 1000
+      #   fsGroup: 1000
+      #   allowPrivilegeEscalation: false
+      #   readOnlyRootFilesystem: false
+      #   seccompProfile:
+      #     type: RuntimeDefault
       containers:
-        - name: bot
+        - name: {{ .Values.fullname | default .Release.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           envFrom:
@@ -36,11 +37,18 @@ spec:
           env:
             - name: DB_PATH
               value: "{{ .Values.persistence.mountPath }}/{{ .Values.persistence.dbFilename }}"
-
-          volumeMounts:
-            - name: data
-              mountPath: {{ .Values.persistence.mountPath }}
-
+            - name: MOZ_DISABLE_CONTENT_SANDBOX
+              value: "1"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 1500Mi
+            limits:
+              cpu: 500m
+              memory: 2000Mi
+          ports:
+            - containerPort: 8081
+              protocol: TCP          
           {{- if .Values.livenessProbe.enabled }}
           livenessProbe:
             exec:
@@ -53,11 +61,9 @@ spec:
             timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
             failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
           {{- end }}
-
-          ports:
-            - containerPort: 8081
-              protocol: TCP
-
+          volumeMounts:
+            - name: data
+              mountPath: {{ .Values.persistence.mountPath }}
       volumes:
         - name: data
           persistentVolumeClaim:

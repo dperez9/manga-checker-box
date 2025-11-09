@@ -3,8 +3,8 @@ fullname: manga-checker-box
 
 image:
   repository: "harbor.boxhomelab.com/telegram-bots/manga-checker-box"
-  tag: "latest"
-  pullPolicy: Always
+  tag: development
+  pullPolicy: IfNotPresent
 
 replicaCount: 1
 
@@ -14,7 +14,7 @@ secret:
 
 persistence:
   enabled: true
-  storageClass: ""        # o pon tu storageClass si usas una específica
+  storageClass: "microk8s-hostpath" 
   size: 10Mi
   accessModes:
     - ReadWriteOnce
@@ -23,9 +23,18 @@ persistence:
 
 # LivenessProbe común para ambos entornos
 livenessProbe:
-  enabled: true
+  enabled: false
   execCommand: "curl -s --max-time 5 https://api.telegram.org/bot >/dev/null"
   initialDelaySeconds: 30
   periodSeconds: 30
   timeoutSeconds: 10
   failureThreshold: 3
+
+# Save backups database
+cronjob:
+  enabled: true
+  name: sqlite-backup-nfs
+  schedule: "30 21 * * *"   # Todos los días a las 23:30h (Formato UTC, hay que aniadirle dos horas mas al schedule) 
+  server_ip: qnap.boxhomelab.com
+  nfs_path: /SQLite
+  storage: 10Mi

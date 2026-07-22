@@ -1,0 +1,33 @@
+{{- if .Values.cronjob.enabled }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Values.cronjob.name }}
+spec:
+  capacity:
+    storage: {{ .Values.cronjob.storage }}
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: {{ .Values.cronjob.server_ip }}
+    path: {{ .Values.cronjob.nfs_path }}
+  mountOptions:
+    - vers=4.1          # Version recomendada para Kubernetes, mejor rendimiento
+    - nconnect=4        # opcional, mejora rendimiento si tu kernel y NAS lo soportan
+  persistentVolumeReclaimPolicy: Retain
+  
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.cronjob.name }}
+  namespace: bots
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .Values.cronjob.storage }}
+  volumeName: {{ .Values.cronjob.name }}
+  storageClassName: ""   # IMPORTANTE: desactiva uso de StorageClass para que no monte el volumen en el nodo
+{{- end }}

@@ -1,0 +1,42 @@
+
+fullname: manga-checker-box
+
+image:
+  repository: "harbor.boxhomelab.com/telegram-bots/manga-checker-box"
+  tag: development
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+# Crea un secreto con tres valores a aniadir en kubernetes
+secret:
+  name: "manga-checker-box"
+
+persistence:
+  enabled: true
+  storageClass: "microk8s-hostpath" 
+  size: 10Mi
+  accessModes:
+    - ReadWriteOnce
+  mountPath: /db
+  dbFilename: manga_tracker.db
+
+# LivenessProbe común para ambos entornos
+livenessProbe:
+  enabled: false
+  execCommand: "curl -s --max-time 5 https://api.telegram.org/bot >/dev/null"
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 3
+
+# Save backups database
+cronjob:
+  enabled: true
+  name: sqlite-backup-nfs
+  schedule: "30 21 * * *"   # Todos los días a las 23:30h (Formato UTC, hay que aniadirle dos horas mas al schedule)
+  server_ip: 192.168.10.3
+  nfs_path: /SQLite
+  storage: 10Mi
+  backupFolder: Manga-backup   # subcarpeta propia dentro de /SQLite, no sueltos en la raíz
+  maxBackups: 15               # retención: borra el backup más antiguo al superar este número

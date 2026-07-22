@@ -10,9 +10,11 @@ selenium_help/
 selenium_help/*
 test_files/
 test_files/*
+key/
 
 # Archivos
-db/manga_tracker.db
+db/manga_tracker*
+db/manga_tracker_dev.db
 db/manga_tracker copy.db
 db/diagrama
 db/diagrama.png
@@ -31,3 +33,5 @@ test_selenium.py
 notas.txt
 mytracks.txt
 manga-checker-box-code.zip
+result.yaml
+harbor_push.sh

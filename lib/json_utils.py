@@ -93,6 +93,7 @@ def load_webdriver()->webdriver:
         options = webdriver.FirefoxOptions()
         options.add_argument("--headless")  # Ejecutar en modo headless, sin ventana del navegador
         options.add_argument("--disable-gpu")  # Deshabilitar aceleración de hardware
+        options.add_argument("--disable-dev-shm-usage")  # Evitar problemas en /dev/shm
         driver = webdriver.Firefox(options=options)
 
         # Para funcionar en ARM64, especificamos la ruta explicita de Geckodriver

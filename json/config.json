@@ -1,7 +1,7 @@
 {
     "logs_path": "/opt/app/logs/",
 
-    "webdriver_browser": "Firefox",
+    "webdriver_browser": "firefox-arm",
     "update_tracking_time_to_wait": 3600,
     "request_waiting_error_time": 4,
     "time_to_wait_between_search": 1,

@@ -21,6 +21,8 @@ cronjob:
   enabled: true
   name: sqlite-backup-nfs-dev
   schedule: "30 0 * * *"   # Todos los días a las 00:30 AM
-  server_ip: qnap.boxhomelab.com
+  server_ip: 192.168.10.3
   nfs_path: /SQLite
   storage: 10Mi
+  backupFolder: Manga-backup-dev   # carpeta separada de la de prod (Manga-backup)
+  maxBackups: 15
